@@ -29,12 +29,12 @@
 # To learn more, please read the Rails Internationalization guide
 # available at https://guides.rubyonrails.org/i18n.html.
 
-en:
+is-IS:
   greeting:
-    - "Hello, I'm the robot Sæmi. I can answer questions about Akranes. I am still studying and doing my best!"
-    - "Please don't give me any personal information about you like the social security number."
-  I_DONT_KNOW: "Unfortunately, I don't know that"
-  TRY_AGAIN: 'Please try again'
-  asr_no_service: 'Unfortunately, I cannot hear what you are saying, please use the keyboard to ask questions'
-  no_service: 'I am not available at the moment. Please try again later'
-  coming_soon: 'English coming soon !'
+    - "Góðan dag, ég er vélmennið Sæmi. Ég get svarað spurningum um Akraneskaupstað, er ennþá að læra en geri mitt besta!"
+    - "Alls ekki láta mig fá persónuupplýsingar eins og nafn eða kennitölu."
+  I_DONT_KNOW: 'Ég veit það því miður ekki.'
+  TRY_AGAIN: 'Reyndu aftur'
+  asr_no_service: 'Ég get því miður ekki heyrt það sem þú segir, vinsamlegast notaðu lyklaborðið til þess að spyrja spurningar'
+  no_service: 'Ég er ekki við í augnablikinu. Vinsamlegast reyndu aftur síðar'
+  coming_soon: 'kemur fljótlega'

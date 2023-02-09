@@ -1,0 +1,4 @@
+RASA_HTTP_SERVER = ENV['RASA_HOSTNAME'] || 'http://sleipnir.local:8180'
+RASA_HTTP_PORT = ENV['RASA_PORT'] || '8180'
+RASA_HTTP_PATH = '/core'
+RASA_HTTP_TOKEN = ENV['RASA_TOKEN'] || 'rasa_token'

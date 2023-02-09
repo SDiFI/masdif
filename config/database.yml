@@ -5,26 +5,30 @@
 #   gem "sqlite3"
 #
 default: &default
-  adapter: sqlite3
-  pool: <%= ENV.fetch("RAILS_MAX_THREADS") { 5 } %>
-  timeout: 5000
+  adapter: postgresql
+  encoding: unicode
+  pool: 5
 
 development:
   <<: *default
-  database: db/development.sqlite3
+  username: <%= ENV['POSTGRES_USER'] %>
+  password: <%= ENV['POSTGRES_PASSWORD']  %>
+  host: <%= ENV['POSTGRES_HOSTNAME'] %>
+  database: masdif_development
 
 # Warning: The database defined as "test" will be erased and
 # re-generated from your development database when you run "rake".
 # Do not set this db to the same as development or production.
 test:
   <<: *default
-  database: db/test.sqlite3
+  username: <%= ENV['POSTGRES_USER'] %>
+  password: <%= ENV['POSTGRES_PASSWORD']  %>
+  host: <%= ENV['POSTGRES_HOSTNAME'] %>
+  database: masdif_test
 
 production:
-  adapter: postgresql
-  encoding: unicode
-  pool: 5
-  host: db
+  <<: *default
   username: <%= Rails.application.credentials.postgres_user %>
   password: <%= Rails.application.credentials.postgres_password %>
-  database: qa_akranes_production
+  host: db
+  database: masdif_production
