@@ -19,9 +19,11 @@ module Masdif
     # config.time_zone = "Central Time (US & Canada)"
     # config.eager_load_paths << Rails.root.join("extras")
 
-    # Generators should only generate api files
     config.generators do |g|
+      # Generators should only generate api files
       g.api_only = true
+      # Use UUIDs as primary keys
+      g.orm :active_record, primary_key_type: :uuid
     end
   end
 end

@@ -1,6 +1,7 @@
 require 'tts_service'
 
 class ConversationsController < ApplicationController
+  before_action :transform_params
   before_action :set_conversation, only: %i[ show update destroy ]
 
   # GET /conversations
@@ -34,7 +35,7 @@ class ConversationsController < ApplicationController
       # add a restart event to the conversation
       event = "restart"
       meta_data = RasaHttp::DEFAULT_METADATA
-      restart_msg = @conversation.messages.create(text: "/#{event}", meta_data: meta_data)
+      restart_msg = @conversation.messages.create(text: "/#{event}", meta_data: meta_data, tts_result: 'none')
       rasa = RasaHttp.new(RASA_HTTP_SERVER, RASA_HTTP_PATH, RASA_HTTP_TOKEN)
       rasa_response = rasa.add_event(@conversation.id.to_s, event, "", meta_data)
       Rails.logger.info("Rasa response: #{rasa_response}")
@@ -56,19 +57,18 @@ class ConversationsController < ApplicationController
   #
   #  the request message has the following format:
   #  {
-  #   "sender id": "unique id of the sender",
-  #   "message": "message text"
+  #   "text": "message text"
   #   "metadata":
   #       {
-  #        "language": "is",
-  #        "timezone": "Iceland",
-  #        "tts": "true"
+  #        "language": "is-IS",
+  #        "tts": "true",
+  #        "voice_id": "Dora",
   #      }
   #  }
   #
   # response
   #
-  # {
+  # [{
   # 	"text": "blubber",
   # 	"data": {
   # 		"elements": null,
@@ -85,38 +85,49 @@ class ConversationsController < ApplicationController
   # 			}
   # 		}]
   # 	}
-  # }
+  # }]
   #
   def update
     logger.info '================ REQUEST MSG START =============='
-    meta_params = conversation_params[:metadata] || RasaHttp::DEFAULT_METADATA.to_json
-    meta_data = JSON.parse(meta_params)
-    language = meta_data[:language] || 'is-IS'
-    voice = meta_data[:voice] || nil
-    use_tts = meta_data[:tts] || 'true'
-
-    @message = @conversation.messages.create(text: conversation_params[:text], meta_data: meta_data)
+    if conversation_params[:metadata]
+      meta_params = conversation_params[:metadata].to_json
+    else
+      meta_params = RasaHttp::DEFAULT_METADATA.to_json
+    end
+    meta_data = JSON.parse(meta_params) ||
+    # TODO: refactor this out into a separate method
+    language = meta_data['language'] || 'is-IS'
+    voice = meta_data['voice_id'] || nil
+    use_tts = meta_data['tts'] || 'true'
+    tts_result = use_tts ? Message.default_tts_result : 'disabled'
+    @message = @conversation.messages.create(text: conversation_params[:text], meta_data: meta_data, tts_result: tts_result)
     if @message
       rasa = RasaHttp.new(RASA_HTTP_SERVER, RASA_HTTP_PATH, RASA_HTTP_TOKEN)
       rasa_response = rasa.rest_msg(@conversation.id.to_s, conversation_params[:text].to_s, meta_data)
+      # rasa_response is an array of hashes
+      json_reply = rasa_response.body
       if rasa_response.status == 200
-        @message.update!(reply: rasa_response.body)
+        @message.reply = rasa_response.body
         if rasa_response.body.size > 0 and use_tts
+          # we combine all text responses into one string for latency reasons
           rasa_answer = rasa_response.body.map{|t| t['text']}.join(' ')
           rasa_answer ||= t(:no_service)
-          audio_file = call_tts(rasa_answer, language, voice)
-
-          # TODO: attach audio to response as link: implementation is not correct
-          # rasa_response.body['attachment']&.push({type: 'audio', payload: {src: audio_file}})
-          logger.info " ..... Would have attached audio file #{audio_file} to response .... "
-          # TODO: mark TTS as successfully called in message record
+          call_tts(rasa_answer, language, voice)
+          if @message.tts_audio.attached?
+            # add url for download
+            tts_audio_url = url_for(@message.tts_audio)
+            json_reply[0].merge!('data' => { 'attachment' => [{ 'type' => 'audio', 'payload' => { 'src' => tts_audio_url } }]})
+            @message.tts_result = 'success'
+          else
+            @message.tts_result = 'error'
+          end
         end
+        @message.save
+        render json: json_reply
       else
         @message.update!(reply: rasa_response.reason_phrase)
         render json: {error: 'Rasa server error'}, status: :internal_server_error
       end
-
-      render json: rasa_response.body
     else
       render json: @message.errors, status: :unprocessable_entity
     end
@@ -154,20 +165,25 @@ class ConversationsController < ApplicationController
     # @param [String] tts_text text to be converted to audio
     # @param [String] language language of the text
     # @param [String] voice voice to be used for the audio
-    # TODO: we shouldn't attach the audio to the message, but to the response object
     def call_tts(tts_text, language, voice)
       Rails.logger.info '================ START TTS ==============='
-      answer_audio_file = nil
       begin
         Rails.logger.debug("TTS input: #{tts_text}, #{language}")
-        answer_audio_file = TtsService.call(tts_text, language, voice)
-        # @message.audio_answer.attach(io: File.open("#{TTSService.audio_path}/#{answer_audio_file}"),
-        #                              filename: File.basename(answer_audio_file))
+        tts_audio_file = TtsService.call(tts_text, language, voice)
+        @message.tts_audio.attach(io: File.open("#{TtsService.audio_path}/#{tts_audio_file}"),
+                                     filename: File.basename(tts_audio_file))
+        # expire audio files
+        #AttachmentCleanupJob.set(wait: 7.days).perform_later @message.tts_audio
+        AttachmentCleanupJob.set(wait: 1.minute).perform_later(@message)
       rescue StandardError => e
         TtsService.no_service(e)
       end
       Rails.logger.info '================ END TTS ================='
-      answer_audio_file
+    end
+
+    # Transform the request parameters to snake_case, to make them compatible with Rails models
+    def transform_params
+      request.parameters.deep_transform_keys!(&:underscore)
     end
 
     # Use callbacks to share common setup or constraints between actions.
@@ -177,6 +193,6 @@ class ConversationsController < ApplicationController
 
     # Only allow a list of trusted parameters through.
   def conversation_params
-      params.permit(:id, :metadata, :language, :voice, :text)
+      params.permit(:id, :language, :voice, :text, :conversation=> [], :metadata => [:voice_id, :language, :tts])
   end
 end

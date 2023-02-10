@@ -5,6 +5,7 @@ require 'grammatek-tts'
 class TtsService < ApplicationService
   attr_reader :text
   mattr_accessor :audio_path
+  SUPPORTED_VOICES = %w[is-IS-Alfur is-IS-Karl is-IS-Dora is-IS-Dilja].freeze
 
   def self.update
     prepare_asset_path
@@ -16,8 +17,12 @@ class TtsService < ApplicationService
     @@tts ||= nil
     @text = text
     @type = 'text'
-    @voice = voice || voice_for_language(language)
     @language = language
+    if validate_voice(voice, language)
+      @voice = voice
+    else
+      @voice = default_voice_for_language(language)
+    end
     Rails.logger.info "TTS: synthesizing for #{@language} #{@voice}"
   end
 
@@ -29,9 +34,6 @@ class TtsService < ApplicationService
     file_stem = "#{@text}.#{@language}.#{@voice}".encrypt
     mp3_file = "#{file_stem}.mp3"
     audio_file = "#{@@audio_path}/#{mp3_file}"
-    # ToDo - check if file exists and is not too old (e.g. N days - configurable) and return it instead of generating
-    #        it again (this is a performance optimization)
-    #      - cleanup old files (e.g. after N days - configurable)
     params = {
       engine: 'standard',
       language_code: 'is-IS',
@@ -81,18 +83,23 @@ class TtsService < ApplicationService
     FileUtils.rm_f(old_audios)
   end
 
-  # Returns supported voice name for given language.
-  def voice_for_language(language)
+  # Returns default voice name for given language.
+  def default_voice_for_language(language)
     case language
     when 'is-IS'
       'Alfur'
-      # TODO: make usage of the voice configurable, e.g. if we use different personas for the bot ..
     else
       'Karl'
     end
   end
 
   private
+
+  def validate_voice(voice, language)
+    return false if voice.nil?
+    return true if SUPPORTED_VOICES.include?("#{language}-#{voice}")
+    true
+  end
 
   # Server configuration for Grammatek TTS v0 API
   def self.tts_config_grammatek_v0

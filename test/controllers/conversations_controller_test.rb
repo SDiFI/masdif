@@ -26,6 +26,20 @@ class ConversationsControllerTest < ActionDispatch::IntegrationTest
     end
   end
 
+  # Check if the bot response contains a tts attachment
+  def check_tts_attachment(json_response)
+    json_response.each do |element|
+      if element.key?('data')
+        assert element['data'].key?('attachment')
+        assert element['data']['attachment'].size > 0
+        assert element['data']['attachment'][0].key?('type')
+        assert element['data']['attachment'][0].key?('payload')
+        assert element['data']['attachment'][0]['payload'].key?('src')
+        assert element['data']['attachment'][0]['payload']['src'].size > 0
+      end
+    end
+  end
+
   test 'should get index' do
     get conversations_url, as: :json
     json_response = JSON.parse(response.body)
@@ -40,7 +54,6 @@ class ConversationsControllerTest < ActionDispatch::IntegrationTest
       json_response = JSON.parse(response.body)
       assert_not_nil json_response['conversation_id']
     end
-
     assert_response :ok
   end
 
@@ -69,6 +82,7 @@ class ConversationsControllerTest < ActionDispatch::IntegrationTest
     assert_response :success
     json_response = response.parsed_body
     check_bot_response(conversation.id, json_response)
+    check_tts_attachment(json_response)
   end
 
   test 'should destroy conversation' do
@@ -84,27 +98,37 @@ class ConversationsControllerTest < ActionDispatch::IntegrationTest
     post conversations_url, params: { }, as: :json
     conversation_id = response.parsed_body['conversation_id']
     conversation = Conversation.new(id: conversation_id)
+
     patch conversation_url(conversation), params: { text: "/restart" }, as: :json
     assert_response :success
+
     patch conversation_url(conversation), params: { text: @msg_hi.text }, as: :json
     assert_response :success
     check_bot_response(conversation.id, response.parsed_body)
+    check_tts_attachment(response.parsed_body)
+
     patch conversation_url(conversation), params: { text: @msg_phone.text }, as: :json
     assert_response :success
     check_bot_response(conversation.id, response.parsed_body)
     buttons = response.parsed_body[0]['buttons']
     assert_not_nil buttons
     assert buttons.size > 0
+
     # send payload of the first button
     patch conversation_url(conversation), params: { text: buttons[0]['payload'], metadata: {} }, as: :json
     assert_response :success
     check_bot_response(conversation.id, response.parsed_body)
+    check_tts_attachment(response.parsed_body)
+
     patch conversation_url(conversation), params: { text: @msg_phone.text, metadata: {} }, as: :json
     assert_response :success
     check_bot_response(conversation.id, response.parsed_body)
+    check_tts_attachment(response.parsed_body)
+
     patch conversation_url(conversation), params: { text: @msg_bless.text, metadata: {} }, as: :json
     assert_response :success
     check_bot_response(conversation.id, response.parsed_body)
+    check_tts_attachment(response.parsed_body)
   end
 
 end

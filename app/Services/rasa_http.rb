@@ -6,7 +6,7 @@
 # us parallelize incoming requests. If we want to optimize this, we can use a connection pool.
 
 class RasaHttp
-  DEFAULT_METADATA = { language: 'is-IS', timezone: 'Iceland' }.freeze
+  DEFAULT_METADATA = { language: 'is-IS' }.freeze
 
   def initialize(host, base_path, token)
     @host = host

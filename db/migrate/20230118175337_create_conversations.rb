@@ -7,7 +7,7 @@ class CreateConversations < ActiveRecord::Migration[7.0]
       t.string :feedback
     end
 
-    create_table :messages do |t|
+    create_table :messages, id: :uuid do |t|
       t.belongs_to :conversation, index: true, type: :uuid, foreign_key: true
       t.timestamps
       t.string :text
