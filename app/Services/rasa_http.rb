@@ -8,13 +8,19 @@
 class RasaHttp
   DEFAULT_METADATA = { language: 'is-IS' }.freeze
 
-  def initialize(host, base_path, token)
-    @host = host
+  def initialize(host, port, base_path, token)
+    if host.start_with?('http://') || host.start_with?('https://')
+      @host = "#{host}:#{port}"
+    else
+      @host = "http://#{host}:#{port}"
+    end
+
     @base_path = base_path
     @token = token
-    @conn = Faraday.new(url: host) do |conn|
+    Rails.logger.info "RasaHttp connection: #{@host}"
+    @conn = Faraday.new(url: @host) do |conn|
       conn.request :json
-      conn.request :authorization, :Token, token
+      conn.request :authorization, :Token, @token
       conn.response :json
       conn.adapter Faraday.default_adapter
       conn.headers['Accept'] = 'application/json'
@@ -22,55 +28,67 @@ class RasaHttp
     end
   end
 
+  # Builds a path for the Rasa HTTP API by prepending the base path
+  #
+  # @param [String] path the path to append to the base path
+  # @return [String] the full path
+  #
+  # @example
+  #  build_path('/status') # => '/api/v1/status'
+  def build_path(path)
+    "#{@base_path}/#{path}".gsub(/\/+/, '/')
+  end
+
   # Health endpoint of Rasa Server
   # This URL can be used as an endpoint to run health checks against. When the server is running this will return 200.
   def get_health
-    @conn.get(@base_path+'/')
+    path = build_path('/')
+    @conn.get(path)
   end
 
   # Status of the Rasa server
   # Information about the server and the currently loaded Rasa model.
   def get_status
-    @conn.get(@base_path+'/status', { token: 'rasa_token' })
+    @conn.get(build_path('/status'), { token: @token })
   end
 
   # Version of Rasa
   # Returns the version of Rasa.
   def get_version
-    @conn.get(@base_path+'/version', { token: 'rasa_token' })
+    @conn.get(build_path('/version'), { token: @token })
   end
 
   # Retrieve the loaded domain
   # Returns the domain specification the currently loaded model is using.
   def get_domain
-    @conn.get(@base_path+'/domain', { token: 'rasa_token' })
+    @conn.get(build_path('/domain'), { token: @token })
   end
 
   # Retrieve a conversations tracker
   # The tracker represents the state of the conversation. The state of the tracker is created by applying a sequence
   # of events, which modify the state. These events can optionally be included in the response.
   def get_tracker(conversation_id)
-    @conn.get(@base_path+'/conversations/'+conversation_id+'/tracker', { token: 'rasa_token' })
+    @conn.get(build_path("/conversations/#{conversation_id}/tracker"), { token: @token })
   end
 
   # Retrieve an end-to-end story corresponding to a conversation
   # The story represents the whole conversation in end-to-end format. This can be posted to the '/test/stories' endpoint
   # and used as a test.
   def get_story(conversation_id)
-    @conn.get(@base_path+'/conversations/'+conversation_id+'/story', { token: 'rasa_token' })
+    @conn.get(build_path("/conversations/#{conversation_id}/story"), { token: @token })
   end
 
   # Adds a message to a tracker. This doesn't trigger the prediction loop. It will log the message on the tracker and
   # return, no actions will be predicted or run. This is often used together with the predict endpoint.
   def add_message(conversation_id, message)
-    @conn.post(@base_path+'/conversations/'+conversation_id+'/messages', { token: 'rasa_token', message: message })
+    @conn.post(build_path("/conversations/#{conversation_id}/messages"), { token: @token, message: message })
   end
 
   # Appends one or multiple new events to the tracker state of the conversation. Any existing events will be kept
   # and the new events will be appended, updating the existing state. If events are appended to a new conversation ID,
   # the tracker will be initialised with a new session.
   def add_event(conversation_id, event, text, metadata = DEFAULT_METADATA)
-    @conn.post @base_path+'/conversations/'+conversation_id+'/tracker/events' do |req|
+    @conn.post build_path("/conversations/#{conversation_id}/tracker/events") do |req|
       req.params[:token] = @token
       case event
       when 'user'
@@ -89,7 +107,7 @@ class RasaHttp
   # Replaces all events of a tracker with the passed list of events. This endpoint should not be used to modify trackers
   # in a production setup, but rather for creating training data.
   def replace_events(conversation_id, events)
-    @conn.put @base_path+'/conversations/'+conversation_id+'/tracker/events' do |req|
+    @conn.put build_path("/conversations/#{conversation_id}/tracker/events") do |req|
       req.params[:token] = @token
       req.body = JSON.generate(events)
     end
@@ -100,7 +118,7 @@ class RasaHttp
   # the model's domain. Actions are returned in the 'scores' array, sorted on their 'score' values.
   # The state of the tracker is not modified.
   def predict(conversation_id)
-    @conn.post @base_path+'/conversations/'+conversation_id+'/predict' do |req|
+    @conn.post build_path("/conversations/#{conversation_id}/predict") do |req|
       req.params[:token] = @token
     end
   end
@@ -142,7 +160,7 @@ class RasaHttp
   #        }
   #   ]
   def rest_msg(sender_id, msg, metadata = DEFAULT_METADATA)
-    @conn.post @base_path+'/webhooks/rest/webhook' do |req|
+    @conn.post build_path("/webhooks/rest/webhook") do |req|
       req.params[:token] = @token
       req.body = JSON.generate(sender: sender_id, message: msg, metadata: metadata)
     end
@@ -150,9 +168,8 @@ class RasaHttp
 
   def rest_delete(conversation_id)
     # delete conversation from tracker store
-    @conn.delete @base_path+'/conversations/'+conversation_id+'/tracker' do |req|
+    @conn.delete build_path("/conversations/#{conversation_id}/tracker") do |req|
       req.params[:token] = @token
-
     end
   end
 
@@ -164,10 +181,7 @@ class RasaHttp
     # POST /model/test/stories
     # POST /model/train
     # DELETE /model
-    # POST /conversations/{conversation_id}/messages
-    # POST /conversations/{conversation_id}/tracker/events
     # POST /conversations/{conversation_id}/execute
-    # PUT /conversations/{conversation_id}/tracker/events
     # POST /conversations/{conversation_id}/trigger_intent
     #
   end

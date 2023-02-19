@@ -1,0 +1,127 @@
+#version: '3'
+
+volumes:
+  db_data: {}
+  redis_data: {}
+  rabbitmq_data: {}
+
+x-rabbitmq-credentials: &rabbitmq-credentials
+  RABBITMQ_HOST: "rabbit"
+  RABBITMQ_USERNAME: "user"
+  RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD}
+
+services:
+  masdif:
+    build:
+      context: .
+      dockerfile: ./docker/masdif/Dockerfile
+    image: harbour.grammatek.com/sdifi/masdif:${APPLICATION_VERSION:-latest}
+    container_name: masdif
+    env_file: .env
+    depends_on:
+      - db
+      - redis
+    restart: unless-stopped
+    ports:
+      - "8080:3000"
+    networks:
+      - backend
+
+  db:
+    # see https://hub.docker.com/_/postgres
+    image: postgres:15-alpine
+    container_name: masdif_db
+    env_file: .env
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    restart: unless-stopped
+    networks:
+      - backend
+
+  redis:
+    # see https://hub.docker.com/_/redis
+    image: redis:6.2-alpine
+    container_name: masdif_redis
+    volumes:
+      - redis_data:/data
+    restart: unless-stopped
+    networks:
+      - backend
+
+  sidekiq:
+    build:
+      context: .
+      dockerfile: ./docker/masdif/Dockerfile.sidekiq
+    image: harbour.grammatek.com/sdifi/sidekiq:${APPLICATION_VERSION:-latest}
+    container_name: masdif_sidekiq
+    restart: unless-stopped
+    env_file: .env
+    depends_on:
+      - db
+      - redis
+    networks:
+      - backend
+
+  rabbit:
+    # see https://registry.hub.docker.com/r/bitnami/rabbitmq for more details
+    restart: unless-stopped
+    image: "bitnami/rabbitmq:3.10"
+    container_name: masdif_rabbit
+    environment:
+      <<: *rabbitmq-credentials
+      RABBITMQ_DISK_FREE_RELATIVE_LIMIT: "0.1"
+    volumes:
+      - rabbitmq_data:/bitnami
+    expose:
+      # default rabbitmq port is 5672
+      - "5672"
+    networks:
+      - backend
+
+  rasa:
+    # This Rasa instance needs an already trained model
+    restart: unless-stopped
+    image: "rasa/rasa:${RASA_VERSION}-full"
+    container_name: masdif_rasa
+    volumes:
+      - ./config/rasa/endpoints.yml:/app/endpoints.yml
+      - ./config/rasa/credentials.yml:/app/credentials.yml
+      - ./rasa/config.yml:/app/config.yml
+      - ./rasa/models:/app/models
+    expose:
+      - '${RASA_PORT}'
+    command: >
+      run
+      -vv
+      --port '${RASA_PORT}'
+      --enable-api
+      --cors "*"
+      --auth-token '${RASA_TOKEN}'
+      --credentials /app/credentials.yml
+    depends_on:
+      - rabbit
+      - db
+    env_file: .env
+    environment:
+      <<: *rabbitmq-credentials
+      RASA_TELEMETRY_ENABLED: "false"
+    networks:
+      - backend
+
+  action_server:
+    # This is the only service that needs to be built via docker-compose build
+    container_name: 'masdif_action_server'
+    build:
+      context: ./rasa
+      dockerfile: ./docker/sdk/Dockerfile
+    restart: unless-stopped
+    expose:
+      - "5055"
+    depends_on:
+      - rasa
+    networks:
+      - backend
+
+networks:
+  backend:
+    driver: bridge

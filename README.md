@@ -1,39 +1,94 @@
-# Masdif - The Sdifi chatbot Manager 
+# Masdif - Manager for Spoken Dialog Framework
 
-This project is a front-facing manager service for Icelandic chatbots. Masdif is a Rails application and centralizes
-access to Icelandic conversational services like ASR, TTS and the dialog framework. It aims to be independent from the
-used dialog system, but is currently based on the Rasa framework.
-We provide configurations for using Rasa in Icelandic, so that Rasa can be used also standalone even without Masdif.
+This project is a front-facing manager service for the spoken dialog framework for Icelandic. Masdif is a Rails
+application and centralizes access to Icelandic conversational services like ASR, TTS and a dialog framework.
+It aims to be independent from the underlying dialog system, but is currently based on the Rasa framework.
 
 The manager provides a central place for saving chat, ASR and TTS logs into a database. Furthermore, it connects to
-RabbitMQ and Redis for external communication or for functional extension points. 
+RabbitMQ and Redis for external communication or for future extension points.
+
+Masdif is not meant to be your Rasa training environment. You need to obtain a previously trained Rasa model
+and then use Masdif to deploy it in the context of conversational AI
+
+We provide configurations for using Rasa in Icelandic via the repositories https://github.com/SDiFI/sdifi_rasa_akranes
+and https://github.com/SDiFI/sdifi_rasa_ja. These Rasa projects can also be used standalone without Masdif.
 
 # General architecture
 
 ## Frontend API
 
-Masdif provides a REST API for the frontend. We provide a web widget that can be easily integrated into a web page.
-This widget is based on [rasa-webchat](https://github.com/botfront/rasa-webchat), adapted to Restful API calls instead
-of using socket.io.
+Masdif provides a REST API for the frontend. We provide a web widget that is served by Masdif itself but can also be
+easily integrated into a web page.
+This widget is based on [rasa-webchat](https://github.com/botfront/rasa-webchat), adapted to Masdif communication
+protocols instead of using socket.io.
 
 The following API endpoints are provided:
 
-- `GET  /` - shows the OpenAPI documentation
-- `GET  /webchat` - serves the webchat widget
 - `GET  /status` - Returns the status of the API
 - `GET  /version` - Returns the version of the Manager
 - `GET  /conversations` - Returns a list of all conversations
-- `GET  /conversations/:id` - Returns a single conversation
-- `GET  /conversations/:id/logs` - Returns all logs for a conversation
+- `GET  /conversations/:id` - Returns history for a single conversation
 - `POST /conversations/` - Creates a new conversation, returns JSON with the conversation id
-- `POST /conversations/:id` - Appends message to conversation with given id
-- `POST /conversations/:id/audio` - Appends audio recording to conversation with given id
+- `PATCH/PUT /conversations/:id` - Appends message to conversation with given id, receives bot response as JSON
+- `DELETE /conversations/:id` - Deletes conversation with given id, TODO: needs to be protected
+
+The following API endpoints are planned for future versions:
+
+- `GET  /` - serves the chat widget
+- `GET  /admin` - web application for managing conversations
+- `GET  /api` - shows the OpenAPI documentation
+- `POST /conversations/:id/audio` - Appends audio recording to conversation with given id, i.e. synchronous ASR
 
 The client sends messages via POST requests to Masdif. The POST request blocks on completion of all involved services.
+All id's are UUID's and therefore unique. Only the client knows the conversation id, which is used to identify the
+conversation in the database.
+
+To be implemented:
+
+- [ ] Add a timeout and lock the conversation after the last message has been sent for a certain time
 
 ##  Conversational services
 
-### ASR
+### Dialog framework
+
+The dialog framework is the core of the conversational AI. It is responsible for the actual dialog management and
+dialog flow. It is also responsible for the actual dialog content, i.e. the answers to the users questions.
+The dialog framework is implemented as a Rasa server. Rasa is a Python framework for conversational AI. It is based
+on the concept of a dialog manager, which is responsible for the dialog flow and the dialog content and uses NLU
+for understanding the users input and a dialogue policy for deciding what to do next. Actions are used to implement
+the actual dialog content and can be extended with custom code.
+
+Masdif communicates with the dialog framework via the [Rasa Rest API](https://rasa.com/docs/rasa/pages/http-api/).
+The Rasa server is configured with a webhook that is called by Rasa after the dialog framework has processed the users
+message. The webhook is called with the users message and the dialog framework response. Masdif then publishes the
+response to RabbitMQ (TODO), saves all info to the database and returns the response to the client. Masdif extends the
+functionality of Rasa by adding TTS and ASR support.
+
+#### TTS
+
+TTS can be enabled or disabled on a message by message basis. It's enabled by default if no `tts:false` is sent inside
+the `metadata` object of the `PUT /conversations/:id` request, Masdif calls the TTS service and publishes the returned
+voice audio as a link to the generated audio file.
+The audio file is a Rails active storage attachment and can be downloaded via the returned link. Active storage
+is by default configured to use the local file system, but can be easily configured to use a cloud storage service
+like AWS S3 as well. If you want to change the storage service, you have to change `config/storage.yml` and the
+`config/environments/production.rb` file.
+
+Audio file attachments are deleted after a certain time, which is configurable via `config/tts.yml` and the configuration
+value `tts_attachment_timeout` in seconds. The default is 5 minutes.
+
+Currently, there are 2 publicly Icelandic TTS services available: the [Grammatek TTS API](https://api.grammatek.com/)
+and the [Tíro TTS API](https://tts.tiro.is/). Both provide currently the same API and voices and are interchangeable.
+A configuration for both is provided in [.env.example](.env.example). If you want to see a list of all available voices,
+you can navigate to either [Grammatek TTS voices](https://api.grammatek.com/tts/v0/voices) or
+[Tíro TTS voices](https://tts.tiro.is/v0/voices).
+
+You can also run your own TTS service by running a compatible TTS service and adapt the configuration in
+[config/tts.yml](config/tts.yml). Please refer to the [SIM TTS documentation](https://github.com/tiro-is/tiro-tts) for more information.
+
+#### ASR
+
+##### To be implemented
 
 For ASR, POST requests can be sent to the audio endpoint of the Masdif API. Masdif then forwards the given audio to
 the ASR service and uses the highest ranked result as new message to the dialog backend. The POST requests returns the
@@ -49,67 +104,208 @@ text can be corrected again depending on the users utterances, which gives the w
 This is not possible if synchronous calls are used. Furthermore, streaming mode enables endpoint detection, which makes
 it possible to detect when a user has stopped speaking, i.e. in the presence of silence.
 
-Our web chatbot widget provides a button to activate audio recording. As soon as the ASR service detects end of audio,
+Our web chat-bot widget provides a button to activate audio recording. As soon as the ASR service detects end of audio,
 it sends a stop response to the widget which disables the audio recording button and sends all so far recognized text
 to Masdif via a normal POST request.
 
-### TTS
-
-After Masdif receives the chatbot response and if TTS is configured for the message (which is the default), Masdif 
-calls the TTS service and publishes the returned voice audio via RabbitMQ. To the client, the text response from the
-dialog framework is sent as well as a link to the generated audio file.
-
-### Dialog framework
-
-The dialog framework adaption is split into 2 parts: the communication and the data abstraction.
-
-#### Rasa Rest API
-
-For communication to Rasa, the proxy service uses the Rasa Rest API https://rasa.com/docs/rasa/pages/http-api/.
-The proxy service is configured with the URL of the Rasa server. A typical request to the Rasa server looks like this:
-
-```json
-{
-  "sender": "test_user",
-  "message": "Hi there!"
-}
-```
-
-The Rasa service returns its response by calling a webhook. The webhook is configured in Masdif as well as inside the
-Rasa server. The webhook is called with the following example JSON:
-
-```json
-{
-  "sender": "test_user",
-  "message": "Hi there!",
-  "response": [
-    {"text": "Hey Rasa!"},
-    {"image": "http://example.com/image.jpg"}
-  ]
-}
-```
-
-## Chat session management
-
-Rails provides already enough functionality for session management. We use the session cookie to store the session ID.
-The session ID is used to identify the user in the database. The session ID is also used to identify the user in the Rasa
-server. The Rasa server is configured to use the session ID as the sender ID. This way, the Rasa server can identify the
-user and can store the user's conversation history in the database.
-
-TODO:
-- [ ] Add a session timeout
-- [ ] Add a session cleanup
-- [ ] Add a session cleanup for the Rasa server
-
 # Installation
-TODO
-## Prerequisites
-TODO
-## Docker
-TODO
-# Development
 
-## `config/master.key` File
-The file `config/master.key` is the de-/encryption key file used for access tokens in `config/credentials.yml.enc`.
-This file is not under version control, but is packaged together with the container. Therefore, the container should not
-be publicly accessible !
+## tl;dr
+
+For hasty people, here's a quick start:
+
+```bash
+git clone https://github.com/SDiFI/sdifi_rasa_akranes.git rasa && pushd rasa
+
+# understand how to train a model
+less README.md
+
+# train it ... (your training actions follow here)
+
+# make sure, that there is a model in the models directory
+ls -l models/
+
+popd
+```
+
+After training your model, execute these commands:
+
+```bash
+# use the example configuration for local development
+cp .env.example .env
+# fetch the docker images
+docker-compose pull
+# start the docker containers in the background
+docker-compose up -d
+# only necessary once after first startup: create the database and run migrations
+docker-compose exec masdif bundle exec rails db:prepare
+```
+
+Now you should be able to communicate with your bot via http://localhost:8080.
+
+## Details
+Masdif as a Rails application operates in conjunction with Redis, Sidekiq and PostgreSQL. The latter is also a
+development and test requirement, because we use certain features of PostgreSQL that are not available in SQLite,
+while Redis and Sidekiq is optional as long as you don't care about persistent jobs for e.g. cleaning up old audio files.
+By default, Redis and Sidekiq are disabled in the development and test environment, but are enabled in the Rails
+production environment.
+
+However, to be really useful, Masdif also needs Rasa and RabbitMQ and therefore all dependencies that are necessary to
+run Rasa and the Rasa action server.
+We therefore provide a Docker Compose file that starts all necessary services in a single command.
+
+## Prerequisites
+
+### docker-compose
+
+You need to have Docker and docker-compose to be available on your system. If you are on a Linux system, you can
+install Docker and docker-compose via your package manager. On Windows and Mac, you can install Docker Desktop, which
+includes both Docker and docker-compose.
+
+### Rasa configuration
+
+Rasa's configuration is split among Masdif and the Rasa project located inside the subdirectory `./rasa`. Those files
+provided by Masdif are necessary for communication and authentication, whereas the NLU configuration and the Rasa
+model(s) are located inside the Rasa project.
+
+The files [credentials.yml](config/rasa/credentials.yml) and [endpoints.yml](config/rasa/endpoints.yml) are provided
+inside the directoy `./config/rasa`. These files are automatically mounted into the Rasa container when calling
+`docker-compose up` and should be well understood before being changed.
+
+### Rasa NLU & model files
+
+As mentioned above, Masdif is not meant to be your Rasa training environment. You need to train your Rasa model
+beforehand and then use Masdif to deploy it. A good starting point are the `sdifi_rasa_XXX` projects, which can be run
+standalone but also integrate cleanly inside Masdif. You can find them on [GitHub](https://github.com/SDiFI).
+
+A rasa project needs to be located in the `./rasa` subdirectory. You can either make a soft-link to the a checked out
+version of your Rasa project or clone the Rasa project into the `./rasa` subdirectory.
+
+Examples:
+
+```bash
+ln -s /path/to/your/rasa/project/ rasa
+```
+
+or e.g.
+
+```bash
+git clone https://github.com/SDiFI/sdifi_rasa_akranes rasa
+```
+
+## Building Docker images
+
+You need to build all Docker images before you can start Masdif. The `docker-compose.yml` file is located in the root
+directory of the project. The individual Docker files are located in the `docker/` subdirectory.
+
+To build all Docker images, run the following command:
+
+```bash
+docker-compose build
+```
+
+Sometimes, there are problems with Docker build kit. If you get an error like
+`failed to solve with frontend dockerfile.v0: failed to read dockerfile`, you need probably to use the following
+commands before building via `docker-compose build`:
+
+```bash
+export DOCKER_BUILDKIT=0
+export COMPOSE_DOCKER_CLI_BUILD=0
+```
+
+Alternatively, you can pull prebuilt images from the Grammatek Docker registry:
+
+```bash
+docker-compose pull
+```
+
+## Starting Masdif
+
+Before starting Masdif, you need to create a `.env` file in the root directory of the project. You can use the
+provided file [.env.example](.env.example) as a template.
+
+After creating the `.env` file, start Masdif via:
+
+```bash
+docker-compose up -d
+```
+
+After initial startup, you need to run database migrations. This is done via:
+
+```bash
+docker-compose run --rm masdif bundle exec rails db:prepare
+```
+
+You should monitor the logs of Rasa and the action server to see if they are running correctly. You can
+do this via:
+
+```bash
+docker-compose logs -f masdif_action_server
+docker-compose logs -f masdif_rasa
+```
+
+Rasa needs quite some time to load the model and start up. You can check if Rasa is running correctly by
+looking at the logs of the service `masdif_rasa`. Rasa is running correctly, if you see a line like
+
+>INFO   -   Rasa server is up and running
+
+But if you see the following line:
+
+>**UserWarning**: No valid model found at models/ !
+
+something is wrong with your model and you should check if model creation has been successful.
+
+## Testing the installation
+
+After you have made sure that Rasa is up, you can communicate with it via the Masdif REST API at `localhost:8080`.
+First check the health of the Rasa server via:
+
+```bash
+curl http://localhost:8080/health
+```
+
+You should see a response like that:
+
+```json
+{
+  "database": "OK",
+  "dialog_system": "OK",
+  "tts": "OK",
+  "masdif": "OK"
+}
+```
+
+Chat to the bot:
+
+```bash
+conversationId=$(curl -s -X POST http://localhost:8080/conversations | jq -r '.conversation_id')
+curl -s -X PUT -H "Content-Type: application/json" -d '{"text":"Hæ"}' http://localhost:8080/conversations/$conversationId
+```
+
+You should see a response similar to that:
+
+```json
+[{
+  "recipient_id": "aedf1f23-25a5-4d65-9af6-5354781a3447",
+  "text": "Góðan daginn!",
+  "data": {
+    "attachment": [{
+      "type": "audio",
+      "payload": {
+        "src": "http://localhost:8080/rails/active_storage/blobs/redirect/eyJfcmFpbHMiOnsibWVzc2FnZSI6IkJBZ3ciLCJleHAiOm51bGwsInB1ciI6ImJsb2JfaWQifX0=--9963f10922377d2ddfeedb79d064f27cba02e362/DTlrRdkW2Tnpy7FwxoN8kGo8efe6TInHO3VVlfvGt68=.mp3"
+      }
+    }]
+  }
+}]
+```
+
+# Development workflow
+
+## TODO
+
+
+# Copyright & License
+
+All code is Copyright © 2023 Grammatek ehf, licensed under the Apache License, Version 2.0.
+
+See [LICENSE](LICENSE) for the full license text.

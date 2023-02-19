@@ -1,0 +1,19 @@
+.dockerignore
+.env.example
+docker-compose.yml
+.git/
+.idea/
+log/
+storage/
+tmp/
+vendor/
+# rasa subdirectory
+rasa/.gitignore
+rasa/.git/
+rasa/.idea/
+rasa/.rasa/
+rasa/db/
+rasa/logs/
+rasa/models/
+rasa/results/
+rasa/venv/

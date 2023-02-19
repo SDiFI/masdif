@@ -1,0 +1,6 @@
+FROM harbour.grammatek.com/sdifi/masdif:latest
+
+# Adding project files
+COPY . .
+CMD ["bundle", "exec", "sidekiq" ]
+

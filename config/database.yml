@@ -8,12 +8,12 @@ default: &default
   adapter: postgresql
   encoding: unicode
   pool: 5
+  username: <%= ENV['POSTGRES_USER'] %>
+  password: <%= ENV['POSTGRES_PASSWORD'] %>
+  host: <%= ENV['POSTGRES_HOSTNAME'] %>
 
 development:
   <<: *default
-  username: <%= ENV['POSTGRES_USER'] %>
-  password: <%= ENV['POSTGRES_PASSWORD']  %>
-  host: <%= ENV['POSTGRES_HOSTNAME'] %>
   database: masdif_development
 
 # Warning: The database defined as "test" will be erased and
@@ -21,14 +21,8 @@ development:
 # Do not set this db to the same as development or production.
 test:
   <<: *default
-  username: <%= ENV['POSTGRES_USER'] %>
-  password: <%= ENV['POSTGRES_PASSWORD']  %>
-  host: <%= ENV['POSTGRES_HOSTNAME'] %>
   database: masdif_test
 
 production:
   <<: *default
-  username: <%= Rails.application.credentials.postgres_user %>
-  password: <%= Rails.application.credentials.postgres_password %>
-  host: db
   database: masdif_production

@@ -4,4 +4,7 @@ Rails.application.routes.draw do
 
   # Defines the root path route ("/")
   # root "articles#index"
+
+  # defines the route for the health check
+  get '/health', to: 'health#index'
 end

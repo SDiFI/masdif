@@ -1,5 +1,13 @@
 require 'tts_service'
 
+# Monkey patch the ActiveStorage::Blob::Analyzable module to avoid the ActiveStorage::Blob::Analyzable#analyze_later method
+# that can result in FileNotFound errors when the file is not yet available on the file system.
+module ActiveStorage::Blob::Analyzable
+  def analyze_later
+    analyze
+  end
+end
+
 class ConversationsController < ApplicationController
   before_action :transform_params
   before_action :set_conversation, only: %i[ show update destroy ]
@@ -36,7 +44,7 @@ class ConversationsController < ApplicationController
       event = "restart"
       meta_data = RasaHttp::DEFAULT_METADATA
       restart_msg = @conversation.messages.create(text: "/#{event}", meta_data: meta_data, tts_result: 'none')
-      rasa = RasaHttp.new(RASA_HTTP_SERVER, RASA_HTTP_PATH, RASA_HTTP_TOKEN)
+      rasa = RasaHttp.new(RASA_HTTP_SERVER, RASA_HTTP_PORT, RASA_HTTP_PATH, RASA_HTTP_TOKEN)
       rasa_response = rasa.add_event(@conversation.id.to_s, event, "", meta_data)
       Rails.logger.info("Rasa response: #{rasa_response}")
       if rasa_response.status == 200
@@ -102,7 +110,7 @@ class ConversationsController < ApplicationController
     tts_result = use_tts ? Message.default_tts_result : 'disabled'
     @message = @conversation.messages.create(text: conversation_params[:text], meta_data: meta_data, tts_result: tts_result)
     if @message
-      rasa = RasaHttp.new(RASA_HTTP_SERVER, RASA_HTTP_PATH, RASA_HTTP_TOKEN)
+      rasa = RasaHttp.new(RASA_HTTP_SERVER, RASA_HTTP_PORT, RASA_HTTP_PATH, RASA_HTTP_TOKEN)
       rasa_response = rasa.rest_msg(@conversation.id.to_s, conversation_params[:text].to_s, meta_data)
       # rasa_response is an array of hashes
       json_reply = rasa_response.body
@@ -115,7 +123,7 @@ class ConversationsController < ApplicationController
           call_tts(rasa_answer, language, voice)
           if @message.tts_audio.attached?
             # add url for download
-            tts_audio_url = url_for(@message.tts_audio)
+            tts_audio_url = rails_storage_proxy_url(@message.tts_audio)
             json_reply[0].merge!('data' => { 'attachment' => [{ 'type' => 'audio', 'payload' => { 'src' => tts_audio_url } }]})
             @message.tts_result = 'success'
           else
@@ -146,7 +154,7 @@ class ConversationsController < ApplicationController
   def destroy
     success = @conversation.destroy
     if success
-      rasa = RasaHttp.new(RASA_HTTP_SERVER, RASA_HTTP_PATH, RASA_HTTP_TOKEN)
+      rasa = RasaHttp.new(RASA_HTTP_SERVER, RASA_HTTP_PORT, RASA_HTTP_PATH, RASA_HTTP_TOKEN)
       rv = rasa.replace_events(@conversation.id.to_s, [])
       if rv.status == 200 and rv.body&.has_key?('events') and rv.body['events'] == []
         rv_status = :success
@@ -172,9 +180,11 @@ class ConversationsController < ApplicationController
         tts_audio_file = TtsService.call(tts_text, language, voice)
         @message.tts_audio.attach(io: File.open("#{TtsService.audio_path}/#{tts_audio_file}"),
                                      filename: File.basename(tts_audio_file))
+        @message.save!
         # expire audio files
-        #AttachmentCleanupJob.set(wait: 7.days).perform_later @message.tts_audio
-        AttachmentCleanupJob.set(wait: 1.minute).perform_later(@message)
+        config = Rails.application.config_for(:tts)
+        expiration_in_secs = config[:tts_attachment_timeout] || 60
+        AttachmentCleanupJob.set(wait: expiration_in_secs.to_i).perform_later(@message)
       rescue StandardError => e
         TtsService.no_service(e)
       end

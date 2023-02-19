@@ -43,10 +43,12 @@ function send_msg() {
     curl -s -X GET "$audioUrl" > audio.mp3
 }
 
-#
-# Note that the "conversation_id" field is not mandatory. If it is not present, the server will generate
-# a new conversation id and return it in the response.
-HOST=http://localhost:3000
+
+# HOST variable == Masdif instance
+# Default for local development
+# HOST=http://localhost:3000
+# Default for docker-compose
+HOST=http://localhost:8080
 
 # We first retrieve a new conversation id.
 create_conversation "$HOST"
@@ -59,7 +61,7 @@ send_msg "hver er bæjarstjóri ?" "Dora"
 # Retrieve the conversation history for conversation id
 conv_history=$(curl -s -X GET ${HOST}/conversations/"$conversationId")
 
-# and pretty print returned list of conversation messages
+# and pretty print returned JSON list of conversation messages
 echo $conv_history | jq .
 
 

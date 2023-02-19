@@ -1,0 +1,29 @@
+event_broker:
+  type: "pika"
+  url: rabbit
+  port: 5672  # default port for RabbitMQ
+  username: ${RABBITMQ_USERNAME}
+  password: ${RABBITMQ_PASSWORD}
+  queues:
+    - "rasa_events"
+
+tracker_store:
+  type: SQL
+  dialect: "postgresql"
+  url: db
+  db: "rasa"
+  login_db: "postgres"
+  username:  ${POSTGRES_USER}
+  password:  ${POSTGRES_PASSWORD}
+
+lock_store:
+  type: "redis"
+  url: redis
+  port: 6379
+  password:
+  db: 2
+  key_prefix: rasa
+
+action_endpoint:
+  url: "http://masdif_action_server:5055/webhook"
+

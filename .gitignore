@@ -30,8 +30,10 @@
 !/tmp/storage/.keep
 
 /public/assets
+/app/assets/audios
 
 # Ignore master key for decrypting credentials and more.
 /config/master.key
 
 .idea/
+.env

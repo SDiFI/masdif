@@ -1,0 +1,15 @@
+default: &default
+  tts_host: <%= ENV['TTS_HOST'] %>
+  tts_base_path: <%= ENV['TTS_BASE_PATH'] %>
+  tts_host_scheme: <%= ENV['TTS_HOST_SCHEME'] %>
+  # timeout in seconds for attachment cleanup
+  tts_attachment_timeout : <%= ENV['TTS_ATTACHMENT_TIMEOUT'] { 5.minutes } %>
+
+development:
+  <<: *default
+
+test:
+  <<: *default
+
+production:
+  <<: *default
