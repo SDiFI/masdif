@@ -271,7 +271,8 @@ You should see a response like that:
   "database": "OK",
   "dialog_system": "OK",
   "tts": "OK",
-  "masdif": "OK"
+  "masdif": "OK",
+  "sidekiq": "OK"
 }
 ```
 
