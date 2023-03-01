@@ -25,7 +25,6 @@ protocols instead of using socket.io.
 The following API endpoints are provided:
 
 - `GET  /status` - Returns the status of the API
-- `GET  /version` - Returns the version of the Manager
 - `GET  /conversations` - Returns a list of all conversations
 - `GET  /conversations/:id` - Returns history for a single conversation
 - `POST /conversations/` - Creates a new conversation, returns JSON with the conversation id
@@ -38,6 +37,7 @@ The following API endpoints are planned for future versions:
 - `GET  /admin` - web application for managing conversations
 - `GET  /api` - shows the OpenAPI documentation
 - `POST /conversations/:id/audio` - Appends audio recording to conversation with given id, i.e. synchronous ASR
+- `GET  /version` - Returns the version of the Manager
 
 The client sends messages via POST requests to Masdif. The POST request blocks on completion of all involved services.
 All id's are UUID's and therefore unique. Only the client knows the conversation id, which is used to identify the

@@ -109,7 +109,6 @@ services:
       - backend
 
   action_server:
-    # This is the only service that needs to be built via docker-compose build
     container_name: 'masdif_action_server'
     build:
       context: ./rasa
