@@ -102,7 +102,7 @@ class ConversationsController < ApplicationController
     else
       meta_params = RasaHttp::DEFAULT_METADATA.to_json
     end
-    meta_data = JSON.parse(meta_params) ||
+    meta_data = JSON.parse(meta_params) || {}
     # TODO: refactor this out into a separate method
     language = meta_data['language'] || 'is-IS'
     voice = meta_data['voice_id'] || nil
@@ -131,6 +131,10 @@ class ConversationsController < ApplicationController
           end
         end
         @message.save
+        # provide meta data back to all responses
+        json_reply.each do |reply|
+          reply.merge!( metadata: meta_data.merge(language: language))
+        end
         render json: json_reply
       else
         @message.update!(reply: rasa_response.reason_phrase)
