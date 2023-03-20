@@ -14,6 +14,7 @@ class HealthController < ApplicationController
     rv[:dialog_system] = check_dialog_system
     # @todo: for tts, we need to implement throttling, so that we don't get rate limited
     rv[:tts] = TtsService.check_health ? :OK : :DOWN
+    rv[:sidekiq] = check_sidekiq
 
     # evaluate the overall health of the service
     if rv.values.any? { |v| v == :DOWN }
@@ -48,18 +49,39 @@ class HealthController < ApplicationController
 
   # Checks if the database is up
   #
-  # @return :OK if the database is up, :DOWN otherwise
+  # @return :OK if the database is up and all migrations completed, :DOWN otherwise
   def check_db
+    rv = :DOWN
     begin
-      conversation = Conversation.first
-      if conversation != nil
-        rv = :OK
-      else
-        rv = :DOWN
+      if defined?(ActiveRecord)
+        if ActiveRecord::Migrator.current_version && ActiveRecord::Migration.check_pending!.nil?
+          rv = :OK
+        end
       end
     rescue ActiveRecord::NoDatabaseError => e
       Rails.logger.error("Database error: #{e}")
-      rv = :DOWN
+    rescue MigrationError => e
+      Rails.logger.error("Database migration error: #{e}")
+    rescue StandardError => e
+      Rails.logger.error("Error: #{e}")
+    end
+    rv
+  end
+
+  # Checks if sidekiq is up
+  #
+  # @return :OK if Sidekiq is up, :DOWN otherwise
+  def check_sidekiq
+    rv = :DOWN
+    if defined?(::Sidekiq)
+      ::Sidekiq.redis do |r|
+        res = r.ping
+        if res == "PONG"
+          rv = :OK
+        else
+          Rails.logger.error("Sidekiq.redis.ping returned #{res.inspect} instead of PONG")
+        end
+      end
     end
     rv
   end
