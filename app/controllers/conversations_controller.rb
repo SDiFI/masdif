@@ -106,7 +106,11 @@ class ConversationsController < ApplicationController
     # TODO: refactor this out into a separate method
     language = meta_data['language'] || 'is-IS'
     voice = meta_data['voice_id'] || nil
-    use_tts = meta_data['tts'] || 'true'
+    # check if meta_data['tts'] is set, if not, set it to true, if it is set to false, then use it
+    if meta_data['tts'].nil?
+      meta_data['tts'] = true
+    end
+    use_tts = true?(meta_data['tts'])
     tts_result = use_tts ? Message.default_tts_result : 'disabled'
     @message = @conversation.messages.create(text: conversation_params[:text], meta_data: meta_data, tts_result: tts_result)
     if @message
@@ -208,5 +212,13 @@ class ConversationsController < ApplicationController
     # Only allow a list of trusted parameters through.
   def conversation_params
       params.permit(:id, :language, :voice, :text, :conversation=> [], :metadata => [:voice_id, :language, :tts])
+  end
+
+  # Check if given object is true. This will do the following:
+  # - if the object is a boolean, return the boolean value
+  # - if the object is a string, return true if the string is "true" (case insensitive)
+  # - otherwise return false
+  def true?(obj)
+    obj.to_s.downcase == "true"
   end
 end

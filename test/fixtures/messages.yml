@@ -6,7 +6,7 @@
 #
 hi:
   text: halló
-  meta_data: { tts: true }
+  meta_data: { tts: false }
   conversation: one
 
 bye:
