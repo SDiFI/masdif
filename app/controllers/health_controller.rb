@@ -19,10 +19,11 @@ class HealthController < ApplicationController
     # evaluate the overall health of the service
     if rv.values.any? { |v| v == :DOWN }
       rv[:masdif] = :UNHEALTHY
+      render json: rv, status: :service_unavailable
     else
       rv[:masdif] = :OK
+      render json: rv
     end
-    render json: rv
   end
 
   private
