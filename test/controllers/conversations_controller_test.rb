@@ -40,6 +40,18 @@ class ConversationsControllerTest < ActionDispatch::IntegrationTest
     end
   end
 
+  # Check if the bot response contains metadata
+  def check_meta_data(json_response, kwargs)
+    json_response.each do |element|
+      assert element.key?('metadata')
+      # all metadata keys given in kwargs must be present
+      kwargs.each do |key, value|
+        assert element['metadata'].key?(key.to_s)
+        assert_equal value, element['metadata'][key.to_s]
+      end
+    end
+  end
+
   test 'should get index' do
     get conversations_url, as: :json
     json_response = JSON.parse(response.body)
@@ -78,11 +90,12 @@ class ConversationsControllerTest < ActionDispatch::IntegrationTest
     post conversations_url, params: { }, as: :json
     json_response = JSON.parse(response.body)
     conversation = Conversation.new(id: json_response['conversation_id'])
-    patch conversation_url(conversation), params: { text: @msg_hi.text }, as: :json
+    patch conversation_url(conversation), params: { text: @msg_hi.text, metadata: @msg_hi.meta_data }, as: :json
     assert_response :success
     json_response = response.parsed_body
     check_bot_response(conversation.id, json_response)
     check_tts_attachment(json_response)
+    check_meta_data(json_response, @msg_hi.meta_data.merge({ 'language' => 'is-IS' }))
   end
 
   test 'should destroy conversation' do
@@ -102,23 +115,26 @@ class ConversationsControllerTest < ActionDispatch::IntegrationTest
     patch conversation_url(conversation), params: { text: "/restart" }, as: :json
     assert_response :success
 
-    patch conversation_url(conversation), params: { text: @msg_hi.text }, as: :json
+    patch conversation_url(conversation), params: { text: @msg_hi.text, metadata: @msg_hi.meta_data }, as: :json
     assert_response :success
     check_bot_response(conversation.id, response.parsed_body)
     check_tts_attachment(response.parsed_body)
+    check_meta_data(response.parsed_body, @msg_hi.meta_data)
 
-    patch conversation_url(conversation), params: { text: @msg_phone.text }, as: :json
+    patch conversation_url(conversation), params: { text: @msg_phone.text, metadata: @msg_phone.meta_data }, as: :json
     assert_response :success
     check_bot_response(conversation.id, response.parsed_body)
     buttons = response.parsed_body[0]['buttons']
     assert_not_nil buttons
     assert buttons.size > 0
+    check_meta_data(response.parsed_body, @msg_phone.meta_data)
 
     # send payload of the first button
-    patch conversation_url(conversation), params: { text: buttons[0]['payload'], metadata: {} }, as: :json
+    patch conversation_url(conversation), params: { text: buttons[0]['payload'], metadata: { tts: false } }, as: :json
     assert_response :success
     check_bot_response(conversation.id, response.parsed_body)
     check_tts_attachment(response.parsed_body)
+    check_meta_data(response.parsed_body, { tts: false })
 
     patch conversation_url(conversation), params: { text: @msg_phone.text, metadata: {} }, as: :json
     assert_response :success
