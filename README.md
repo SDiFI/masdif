@@ -18,9 +18,7 @@ and https://github.com/SDiFI/sdifi_rasa_ja. These Rasa projects can also be used
 ## Frontend API
 
 Masdif provides a REST API for the frontend. We provide a web widget that is served by Masdif itself but can also be
-easily integrated into a web page.
-This widget is based on [rasa-webchat](https://github.com/botfront/rasa-webchat), adapted to Masdif communication
-protocols instead of using socket.io.
+easily integrated into a web page. The widget source code can be found [here](https://github.com/SDiFI/webchat).
 
 The following API endpoints are provided:
 
@@ -94,7 +92,7 @@ For ASR, POST requests can be sent to the audio endpoint of the Masdif API. Masd
 the ASR service and uses the highest ranked result as new message to the dialog backend. The POST requests returns the
 ASR result together with the answer from the dialog system.
 Alternatively, you can use the gRPC endpoint either by sending audio synchronously to it or via a streaming request.
-The latter is preferred for performance reasons and the webchat widget does this by default. 
+The latter is preferred for performance reasons and the web-chat widget does this by default.
 
 ASR gRPC is implemented via 2 hops: a gRPC proxy and the real gRPC ASR service. The proxy mediates the users audio to
 the real gRPC service and publishes it also via RabbitMQ to make it possible for more services to work on it, e.g.
@@ -299,6 +297,18 @@ You should see a response similar to that:
   }
 }]
 ```
+
+### Web chat widget
+
+<div style="text-align:center">
+![webchat widget](./doc/sdifi-webchat.png)
+</div>
+
+The [SDiFI web-chat widget](https://github.com/SDiFI/webchat) is enabled by default and is served directly at
+http://locahost:8080. It can be configured to be served at a different URL if you edit the
+[Masdif configuration file](config/masdif.yml) and change the setting `chat_widget.path` to another value.
+
+You can disable the web-chat widget by setting `chat_widget.enabled` to `false`.
 
 # Development workflow
 

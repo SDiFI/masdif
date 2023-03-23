@@ -1,0 +1,9 @@
+# Masdif configuration
+
+# Sdifi chat widget configuration options
+chat_widget:
+  # Enable or disable the chat widget
+  enabled: true
+  # The path to where the chat widget is served
+  path: /
+

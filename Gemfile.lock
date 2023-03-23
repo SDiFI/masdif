@@ -248,6 +248,7 @@ DEPENDENCIES
   jbuilder
   pg (~> 1.4)
   puma (~> 5.0)
+  rack (>= 2.2.6.4)
   rack-cors
   rails (~> 7.0.4.3)
   reline
