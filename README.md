@@ -312,8 +312,90 @@ You can disable the web-chat widget by setting `chat_widget.enabled` to `false`.
 
 # Development workflow
 
-## TODO
+Besides running Masdif via `docker-compose up`, you can also run Masdif in development mode. This is useful if you
+want to make changes to the code and see the effects immediately.
+Masdif is a Ruby on Rails application and uses PostgreSQL as database as well as Sidekiq for background jobs, which
+again uses Redis as a message broker.
 
+## Prerequisites
+We propose that you use docker-compose to run Rasa, the database, Redis and use your local Ruby installation to run
+the Rails application.
+
+The following steps describe how to set up a development environment.
+
+Expose all required services to TCP ports available from Ruby on Rails. This can easily be done without the need to edit
+`docker-compose.yml` by adding a `docker-compose.override.yml` file to the root directory of the project:
+
+```yaml
+services:
+    rasa:
+        ports:
+        - "5005:5005"
+    redis:
+        ports:
+        - "6379:6379"
+    db:
+        ports:
+        - "5432:5432"
+```
+
+Furthermore, you need to export the following environment variables in your shell or similarly in an `.env` file in the
+root directory:
+
+```bash
+export RAILS_ENV=development
+export RACK_ENV=development
+export POSTGRES_HOSTNAME=localhost
+export POSTGRES_PASSWORD=<your password>
+export POSTGRES_USER=postgres
+export RASA_HOSTNAME=localhost
+export RASA_PATH=/core
+export RASA_PORT=8180
+export RASA_TOKEN=<the rasa token>
+export RASA_VERSION=3.4.2
+export TTS_BASE_PATH=/tts/v0
+export TTS_HOST=<Host of the TTS service>
+export TTS_HOST_SCHEME=https
+```
+
+# Production considerations
+
+## Secrets
+
+You should generate a fresh keypair of `config/credentials.yml.enc` and `config/master.key` and store them in
+a secure location. You can generate a new keypair via:
+
+```bash
+rm -f config/credentials.yml.enc config/master.key
+bundle exec rails credentials:edit
+```
+
+The file `master.key` needs to exist before building the masdif container, but will be deleted from it after the
+container has been built. Please never commit `master.key` to the repository.
+You should set the environment variable `RAILS_MASTER_KEY` to the contents of `config/master.key` in an
+`.env` file when starting the container. This can be done by adding the following line:
+
+```
+RAILS_MASTER_KEY=<contents of your master key>
+```
+
+## Reverse proxy
+
+When running in production, you should use a reverse proxy like Nginx to serve the static assets and to handle SSL.
+Please refer to the documentation of your reverse proxy.
+When using `docker-compose`, you should mount a volume containing the static assets to the containers for Nginx and Masdif.
+The assets are located in `public/assets` and are generated via `bundle exec rails assets:precompile` inside the Masdif
+container at build time.
+
+## Concurrency / throughput
+
+You need to test your Rasa / Rasa action server including ASR/TTS to get an idea for the min/max throughput time of your
+overall system for one request and how many requests can be sent concurrently.
+Many of the dialog management steps need to run sequentially (ASR => Rasa => Rasa Action => TTS). Activating /
+deactivating ASR / TTS and the choice of the concrete service will influence the overall throughput for a request /
+response cycle. If one of the services in the chain cannot run more than N concurrent requests, Masdif as a whole
+cannot run more than N concurrent requests and it doesn't make sense to scale out e.g. Rasa, if the TTS service cannot
+handle more concurrent requests. Balance the number of workers for Rails/Sidekiq accordingly.
 
 # Copyright & License
 
