@@ -131,6 +131,10 @@ After training your model, execute these commands:
 ```bash
 # use the example configuration for local development
 cp .env.example .env
+# Create a new pair of credentials
+EDITOR=cat rails credentials:edit >/dev/null
+RAILS_MASTER_KEY=$(cat config/master.key)
+echo "RAILS_MASTER_KEY=$RAILS_MASTER_KEY" >> .env
 # fetch the docker images
 docker-compose pull
 # start the docker containers in the background
@@ -140,6 +144,10 @@ docker-compose exec masdif bundle exec rails db:prepare
 ```
 
 Now you should be able to communicate with your bot via http://localhost:8080.
+
+Alternatively, you can use the script [start-masdif.sh](start-masdif.sh) to build & start all docker containers.
+This will clone the repository into sub-directory `rasa/`. The script will also create a new pair of credentials and
+start the bot. You probably need to adapt it to your environment (e.g. pyenv, Python version).
 
 ## Details
 Masdif as a Rails application operates in conjunction with Redis, Sidekiq and PostgreSQL. The latter is also a
@@ -375,8 +383,9 @@ container has been built. Please never commit `master.key` to the repository.
 You should set the environment variable `RAILS_MASTER_KEY` to the contents of `config/master.key` in an
 `.env` file when starting the container. This can be done by adding the following line:
 
-```
-RAILS_MASTER_KEY=<contents of your master key>
+```bash
+RAILS_MASTER_KEY=$(cat config/master.key)
+echo "RAILS_MASTER_KEY=$RAILS_MASTER_KEY" >> .env
 ```
 
 ## Reverse proxy
