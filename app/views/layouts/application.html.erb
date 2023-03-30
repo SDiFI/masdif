@@ -7,10 +7,21 @@
     <%= csp_meta_tag %>
 
     <%= stylesheet_link_tag "application", "data-turbo-track": "reload" %>
+    <style><%= yield :stylesheets %></style>
     <%= javascript_importmap_tags %>
   </head>
 
   <body>
+    <% if defined?(@webchat_config) && @webchat_config.present? && @webchat_config['enabled'] %>
+      <%= javascript_tag do %>
+        window.onload = () => {
+          Webchat.init("chat", {
+          serverAddress: window.location.origin
+          });
+        }
+      <% end %>
+    <% end %>
     <%= yield %>
+    <div id="chat"></div>
   </body>
 </html>

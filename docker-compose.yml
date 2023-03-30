@@ -1,9 +1,16 @@
-#version: '3'
+# Please use this docker-compose.yml file to start the project. It is meant to be used in combination with the
+# docker-compose override file of a specific Rasa subproject. See the README.md of this project for more information.
+version: "3.8"
 
 volumes:
   db_data: {}
   redis_data: {}
   rabbitmq_data: {}
+  fuseki-data: {}
+
+networks:
+  backend:
+    driver: bridge
 
 x-rabbitmq-credentials: &rabbitmq-credentials
   RABBITMQ_HOST: "rabbit"
@@ -120,7 +127,3 @@ services:
       - rasa
     networks:
       - backend
-
-networks:
-  backend:
-    driver: bridge

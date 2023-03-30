@@ -7,6 +7,7 @@ RUN mkdir -p ~/.ssh && ssh-keyscan -t rsa github.com >> ~/.ssh/known_hosts
 # Set an environment variable where the Rails app is installed to inside of Docker image
 ENV RAILS_ROOT /var/www/masdif
 RUN mkdir -p $RAILS_ROOT/app/assets/audios
+RUN mkdir -p $RAILS_ROOT/vendor/javascript
 RUN mkdir -p $RAILS_ROOT/tmp/pids/
 
 # Set working directory
@@ -26,6 +27,8 @@ RUN bundle install --jobs 20 --retry 5
 
 # Adding project files
 COPY . $RAILS_ROOT
+RUN RAILS_ENV=production bundle exec rails assets:precompile
+RUN rm -f config/master.key
 
 EXPOSE 8080
 

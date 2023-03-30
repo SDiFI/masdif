@@ -9,6 +9,7 @@ module ActiveStorage::Blob::Analyzable
 end
 
 class ConversationsController < ApplicationController
+  skip_forgery_protection
   before_action :transform_params
   before_action :set_conversation, only: %i[ show update destroy ]
 

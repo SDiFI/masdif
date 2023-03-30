@@ -20,8 +20,6 @@ module Masdif
     # config.eager_load_paths << Rails.root.join("extras")
 
     config.generators do |g|
-      # Generators should only generate api files
-      g.api_only = true
       # Use UUIDs as primary keys
       g.orm :active_record, primary_key_type: :uuid
     end
