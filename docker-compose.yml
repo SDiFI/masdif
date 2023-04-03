@@ -22,7 +22,7 @@ services:
     build:
       context: .
       dockerfile: ./docker/masdif/Dockerfile
-    image: harbour.grammatek.com/sdifi/masdif:${APPLICATION_VERSION:-latest}
+    image: ${REGISTRY_URL:-}masdif:${APPLICATION_VERSION:-latest}
     container_name: masdif
     env_file: .env
     depends_on:
@@ -59,7 +59,7 @@ services:
     build:
       context: .
       dockerfile: ./docker/masdif/Dockerfile.sidekiq
-    image: harbour.grammatek.com/sdifi/sidekiq:${APPLICATION_VERSION:-latest}
+    image: ${REGISTRY_URL:-}sidekiq:${APPLICATION_VERSION:-latest}
     container_name: masdif_sidekiq
     restart: unless-stopped
     env_file: .env
