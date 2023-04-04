@@ -1,4 +1,6 @@
-FROM harbour.grammatek.com/sdifi/masdif:latest
+ARG APPLICATION_VERSION
+ARG REGISTRY_URL
+FROM ${REGISTRY_URL}masdif:${APPLICATION_VERSION}
 
 # Adding project files
 COPY . .

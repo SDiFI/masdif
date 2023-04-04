@@ -1,0 +1,40 @@
+name: Masdif Build & deploy
+run-name: ${{ github.actor }} builds Masdif for ${{ github.ref }} on ${{ github.event_name }}
+env:
+  APPLICATION_VERSION: ${{ github.sha }}
+  FUSEKI_VERSION: 4.7.0
+  POSTGRES_HOSTNAME: db
+  POSTGRES_USER: postgres
+  RABBITMQ_USER: user
+  RAILS_SERVE_STATIC_FILES: true
+  RAILS_LOG_TO_STDOUT: true
+  RASA_PORT: 5005
+  RASA_VERSION: 3.4.2
+  REGISTRY_URL: ${{ vars.REGISTRY_URL }}
+
+on: push
+jobs:
+  docker-build-municipality:
+    runs-on: ubuntu-latest
+    environment: Action Build
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+      - name: Checkout municipality repository
+        uses: actions/checkout@v3
+        with:
+          repository: SDiFI/sdifi_rasa_akranes
+          path: ./rasa
+      - name: Build masdif
+        env:
+          RAILS_CREDENTIALS: ${{ secrets.RAILS_CREDENTIALS }}
+          RAILS_MASTER_KEY: ${{ secrets.RAILS_MASTER_KEY }}
+        run: |
+          ci/create_credentials.sh $RAILS_CREDENTIALS $RAILS_MASTER_KEY
+          docker-compose build masdif
+      - name: Build sidekiq
+        run: |
+          docker-compose build sidekiq
+      - name: Build action-server
+        run: |
+          docker-compose build action_server

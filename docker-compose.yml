@@ -14,7 +14,7 @@ networks:
 
 x-rabbitmq-credentials: &rabbitmq-credentials
   RABBITMQ_HOST: "rabbit"
-  RABBITMQ_USERNAME: "user"
+  RABBITMQ_USERNAME: ${RABBITMQ_USER}
   RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD}
 
 services:
@@ -22,9 +22,11 @@ services:
     build:
       context: .
       dockerfile: ./docker/masdif/Dockerfile
+      args:
+        APPLICATION_VERSION: ${APPLICATION_VERSION:-latest}
+        REGISTRY_URL: ${REGISTRY_URL:-}
     image: ${REGISTRY_URL:-}masdif:${APPLICATION_VERSION:-latest}
     container_name: masdif
-    env_file: .env
     depends_on:
       - db
       - redis
@@ -38,7 +40,6 @@ services:
     # see https://hub.docker.com/_/postgres
     image: postgres:15-alpine
     container_name: masdif_db
-    env_file: .env
     volumes:
       - db_data:/var/lib/postgresql/data
     restart: unless-stopped
@@ -58,11 +59,13 @@ services:
   sidekiq:
     build:
       context: .
+      args:
+        APPLICATION_VERSION: ${APPLICATION_VERSION:-latest}
+        REGISTRY_URL: ${REGISTRY_URL:-}
       dockerfile: ./docker/masdif/Dockerfile.sidekiq
     image: ${REGISTRY_URL:-}sidekiq:${APPLICATION_VERSION:-latest}
     container_name: masdif_sidekiq
     restart: unless-stopped
-    env_file: .env
     depends_on:
       - db
       - redis
@@ -108,7 +111,6 @@ services:
     depends_on:
       - rabbit
       - db
-    env_file: .env
     environment:
       <<: *rabbitmq-credentials
       RASA_TELEMETRY_ENABLED: "false"
