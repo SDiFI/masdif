@@ -63,6 +63,9 @@ services:
     depends_on:
       - db
       - redis
+    # sidekiq needs to connect to PostgreSQL, therefore expose environment variables
+    env_file:
+      - .env
 
   rabbit:
     # see https://registry.hub.docker.com/r/bitnami/rabbitmq for more details
