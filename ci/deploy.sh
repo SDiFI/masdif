@@ -46,8 +46,12 @@ echo "RAILS_MASTER_KEY=$MASTER_KEY" >> $ENV_FILE
 #   - Rasa configuration files and Rasa model
 ssh "$USER_HOST" "mkdir -p $DEPLOY_DIR"
 ssh "$USER_HOST" "mkdir -p $DEPLOY_DIR/rasa/models"
+
 ssh "$USER_HOST" "mkdir -p $DEPLOY_DIR/rasa/cache"
 ssh "$USER_HOST" "mkdir -p $DEPLOY_DIR/config/rasa"
+
+# remove old Rasa models
+ssh "$USER_HOST" "rm -f $DEPLOY_DIR/rasa/models/*"
 
 scp config/rasa/endpoints.yml "$USER_HOST":$DEPLOY_DIR/config/rasa
 scp config/rasa/credentials.yml "$USER_HOST":$DEPLOY_DIR/config/rasa
