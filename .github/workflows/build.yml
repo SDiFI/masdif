@@ -1,4 +1,4 @@
-name: Masdif Build & deploy
+name: Masdif Build containers
 run-name: ${{ github.actor }} builds Masdif for ${{ github.ref }} on ${{ github.event_name }}
 env:
   APPLICATION_VERSION: ${{ github.sha }}
@@ -8,11 +8,15 @@ env:
   RABBITMQ_USER: user
   RAILS_SERVE_STATIC_FILES: true
   RAILS_LOG_TO_STDOUT: true
-  RASA_PORT: 5005
-  RASA_VERSION: 3.4.2
+  RASA_REPO_DIR: ./rasa
+  RASA_VERSION: 3.4.9
   REGISTRY_URL: ${{ vars.REGISTRY_URL }}
 
-on: push
+# Only run if no tag is pushed
+on:
+  push:
+    branches:
+      - '**'
 jobs:
   docker-build-municipality:
     runs-on: ubuntu-latest
@@ -24,17 +28,12 @@ jobs:
         uses: actions/checkout@v3
         with:
           repository: SDiFI/sdifi_rasa_akranes
-          path: ./rasa
-      - name: Build masdif
+          path: ${{ env.RASA_REPO_DIR }}
+      - name: Build masdif images
         env:
           RAILS_CREDENTIALS: ${{ secrets.RAILS_CREDENTIALS }}
           RAILS_MASTER_KEY: ${{ secrets.RAILS_MASTER_KEY }}
         run: |
           ci/create_credentials.sh $RAILS_CREDENTIALS $RAILS_MASTER_KEY
-          docker-compose build masdif
-      - name: Build sidekiq
-        run: |
-          docker-compose build sidekiq
-      - name: Build action-server
-        run: |
-          docker-compose build action_server
+          cp .env.example .env
+          cat docker-compose.yml $RASA_REPO_DIR/masdif_override_template.yml | docker-compose -f - build

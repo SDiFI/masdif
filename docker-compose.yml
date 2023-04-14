@@ -8,10 +8,6 @@ volumes:
   rabbitmq_data: {}
   fuseki-data: {}
 
-networks:
-  backend:
-    driver: bridge
-
 x-rabbitmq-credentials: &rabbitmq-credentials
   RABBITMQ_HOST: "rabbit"
   RABBITMQ_USERNAME: ${RABBITMQ_USER}
@@ -33,8 +29,8 @@ services:
     restart: unless-stopped
     ports:
       - "8080:3000"
-    networks:
-      - backend
+    env_file:
+      - .env
 
   db:
     # see https://hub.docker.com/_/postgres
@@ -43,8 +39,8 @@ services:
     volumes:
       - db_data:/var/lib/postgresql/data
     restart: unless-stopped
-    networks:
-      - backend
+    env_file:
+      - .env
 
   redis:
     # see https://hub.docker.com/_/redis
@@ -53,8 +49,6 @@ services:
     volumes:
       - redis_data:/data
     restart: unless-stopped
-    networks:
-      - backend
 
   sidekiq:
     build:
@@ -69,8 +63,6 @@ services:
     depends_on:
       - db
       - redis
-    networks:
-      - backend
 
   rabbit:
     # see https://registry.hub.docker.com/r/bitnami/rabbitmq for more details
@@ -85,8 +77,6 @@ services:
     expose:
       # default rabbitmq port is 5672
       - "5672"
-    networks:
-      - backend
 
   rasa:
     # This Rasa instance needs an already trained model
@@ -98,6 +88,7 @@ services:
       - ./config/rasa/credentials.yml:/app/credentials.yml
       - ./rasa/config.yml:/app/config.yml
       - ./rasa/models:/app/models
+      - ./rasa/cache:/app/cache
     expose:
       - '${RASA_PORT}'
     command: >
@@ -114,18 +105,8 @@ services:
     environment:
       <<: *rabbitmq-credentials
       RASA_TELEMETRY_ENABLED: "false"
-    networks:
-      - backend
+      TRANSFORMERS_CACHE: "/app/cache"
+    env_file:
+      - .env
 
-  action_server:
-    container_name: 'masdif_action_server'
-    build:
-      context: ./rasa
-      dockerfile: ./docker/sdk/Dockerfile
-    restart: unless-stopped
-    expose:
-      - "5055"
-    depends_on:
-      - rasa
-    networks:
-      - backend
+# please leave this empty line at the end of the file

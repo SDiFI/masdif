@@ -22,6 +22,7 @@ easily integrated into a web page. The widget source code can be found [here](ht
 
 The following API endpoints are provided:
 
+- `GET  /` - Serves the chat widget (configurable)
 - `GET  /status` - Returns the status of the API
 - `GET  /conversations` - Returns a list of all conversations
 - `GET  /conversations/:id` - Returns history for a single conversation
@@ -31,7 +32,6 @@ The following API endpoints are provided:
 
 The following API endpoints are planned for future versions:
 
-- `GET  /` - serves the chat widget
 - `GET  /admin` - web application for managing conversations
 - `GET  /api` - shows the OpenAPI documentation
 - `POST /conversations/:id/audio` - Appends audio recording to conversation with given id, i.e. synchronous ASR
@@ -158,7 +158,9 @@ production environment.
 
 However, to be really useful, Masdif also needs Rasa and RabbitMQ and therefore all dependencies that are necessary to
 run Rasa and the Rasa action server.
-We therefore provide a Docker Compose file that starts all necessary services in a single command.
+We therefore provide a Docker Compose file that starts all necessary services in a single command in conjunction with
+a file `masdif_override_template.yml` which contains more service snippets that are necessary for running all features
+of the Rasa project located in the subdirectory `./rasa`.
 
 ## Prerequisites
 
@@ -327,7 +329,7 @@ again uses Redis as a message broker.
 
 ## Prerequisites
 We propose that you use docker-compose to run Rasa, the database, Redis and use your local Ruby installation to run
-the Rails application.
+the Rails application Masdif.
 
 The following steps describe how to set up a development environment.
 
@@ -347,26 +349,31 @@ services:
         - "5432:5432"
 ```
 
-Furthermore, you need to export the following environment variables in your shell or similarly in an `.env` file in the
-root directory:
-
-```bash
-export RAILS_ENV=development
-export RACK_ENV=development
-export POSTGRES_HOSTNAME=localhost
-export POSTGRES_PASSWORD=<your password>
-export POSTGRES_USER=postgres
-export RASA_HOSTNAME=localhost
-export RASA_PATH=/core
-export RASA_PORT=8180
-export RASA_TOKEN=<the rasa token>
-export RASA_VERSION=3.4.2
-export TTS_BASE_PATH=/tts/v0
-export TTS_HOST=<Host of the TTS service>
-export TTS_HOST_SCHEME=https
-```
+Furthermore, you need to export environment variables in your shell like those inside [.env.example](.env.example).
 
 # Production considerations
+
+## Models and dependencies
+
+You need to have trained a Rasa model before you can use Masdif. If you use our standard NLP pipeline, you need
+additionally the appropriate language model from Huggingface. Rasa automatically downloads the language model when it
+loads the model and saves it into a cache directory. As this might need a lot of time, we use the directory `cache/` to
+store the language model files persistently. Whenever Rasa is started, the language model is tried to be loaded again
+from there.
+
+When building the containers via `docker-compose build`, the models and language models are not copied into them,
+as one should be able to exchange them without rebuilding the containers. Instead, the models are mounted  via
+directory mounts.
+
+When deploying Masdif, you need to transfer the trained Rasa model to the server. For startup speed
+considerations, you should also transfer the language model. Inside the container, the environment variable
+`TRANSFORMERS_CACHE` determines the cache directory for the language model. You can set this variable in the file
+`.env`. Please make sure, to also change the mounted directory in `docker-compose.yml` in case you want to change the
+default path.
+
+If you retrain a Rasa model, you need to copy the new model to the server and restart the container `masdif_rasa`.
+Usually, downloading a new language model is not necessary as long as the NLP pipeline hasn't changed.
+In the time of restarting the container, Rasa will not be available.
 
 ## Secrets
 
@@ -405,6 +412,13 @@ deactivating ASR / TTS and the choice of the concrete service will influence the
 response cycle. If one of the services in the chain cannot run more than N concurrent requests, Masdif as a whole
 cannot run more than N concurrent requests and it doesn't make sense to scale out e.g. Rasa, if the TTS service cannot
 handle more concurrent requests. Balance the number of workers for Rails/Sidekiq accordingly.
+
+Usually, the bottlenecks are ASR and TTS which need between 500ms - 1500ms per request depending on server/input length.
+Masdif itself should be able to handle hundreds of requests per second, but this depends on the number of workers and
+the overall system performance.
+If you need high availability (HA), you should consider using a load balancer to distribute the requests to multiple
+Rasa instances. You should also consider HA for all dependent services. However, this scenario is outside the scope of
+this documentation.
 
 # Copyright & License
 

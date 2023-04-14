@@ -3,6 +3,7 @@
 docker-compose.yml
 .git/
 .idea/
+cache/
 log/
 storage/
 tmp/

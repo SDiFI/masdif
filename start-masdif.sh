@@ -20,8 +20,8 @@ if [ $? == 1 ]; then
 fi
 
 # Clone repo, if not already cloned
-if [ ! -d "$RASA_REPO_NAME" ]; then
-    git clone https://github.com/SDiFI/$RASA_REPO_NAME.git RASA_REPO_DIR
+if [ ! -d "$RASA_REPO_DIR" ]; then
+    git clone https://github.com/SDiFI/$RASA_REPO_NAME.git $RASA_REPO_DIR
     pushd $RASA_REPO_DIR || exit 1
 
     # install Rasa
@@ -39,7 +39,7 @@ if [ ! -d "$RASA_REPO_NAME" ]; then
 fi
 
 # prepare Masdif
-#C reate new credentials if not already present
+# Create new credentials if not already present
 if [ ! -f "config/master.key" ]; then
     export EDITOR=cat
     rails credentials:edit
@@ -47,7 +47,8 @@ if [ ! -f "config/master.key" ]; then
     echo "RAILS_MASTER_KEY=$RAILS_MASTER_KEY" >> .env
 fi
 
+# Combine the local docker-compose.yml with the Masdif override template of the Rasa bot
 # build Masdif stack
-docker-compose -f docker-compose.yml -f $RASA_REPO_DIR/masdif_override_template.yml build
-# combine the local docker-compose.yml with the Masdif override template of the Rasa bot and start the whole stack
+cat docker-compose.yml $RASA_REPO_DIR/masdif_override_template.yml | docker-compose -f - build
+# start it
 cat docker-compose.yml $RASA_REPO_DIR/masdif_override_template.yml | docker-compose -f - up
