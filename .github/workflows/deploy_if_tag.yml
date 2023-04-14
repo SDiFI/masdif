@@ -14,13 +14,11 @@ env:
   REGISTRY_SERVER: ${{ vars.REGISTRY_BASE_URL }}
   REGISTRY_URL: ${{ vars.REGISTRY_URL }}
 
-# Only run if a tag is pushed to main
+# Only run if a tag "v.." is pushed
 on:
   push:
-    branches:
-      - main
     tags:
-      - "**"
+      - "v*"
 
 jobs:
   docker-deploy-municipality:
