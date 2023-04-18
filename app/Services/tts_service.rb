@@ -5,12 +5,13 @@ require 'grammatek-tts'
 class TtsService < ApplicationService
   attr_reader :text
   mattr_reader :audio_path
+
   # List of available voices with encoded locale info; this is queried from TTS service and updated
   SUPPORTED_VOICES = []
 
   def self.update
-    prepare_asset_path
     @@tts = Grammatek::TTS::SpeechApi.new(Grammatek::TTS::ApiClient.new(tts_config))
+    prepare_asset_path
     # get list of all voices
     begin
       tts_voices = @@tts&.voices_get
@@ -18,6 +19,10 @@ class TtsService < ApplicationService
       tts_voices&.each do |voice|
         next if voice.language_code.nil? || voice.voice_id.nil?
         SUPPORTED_VOICES << "#{voice.language_code}-#{voice.voice_id}"
+      end
+      config = Rails.application.config.masdif[:tts]
+      unless validate_voice(config[:default_voice], config[:language])
+        Rails.logger.warn("TTS configuration error: validation of configuration not compatible with service")
       end
     rescue Grammatek::TTS::ApiError => e
       Rails.logger.error "Error when calling SpeechApi->voices_get: #{e}"
@@ -53,12 +58,12 @@ class TtsService < ApplicationService
     @text = text
     @type = 'text'
     @language = language || 'is-IS'
-    if validate_voice(voice, language)
+    if TtsService.validate_voice(voice, language)
       @voice = voice
     else
       @voice = default_voice_for_language(@language)
     end
-    Rails.logger.info "TTS: synthesizing for #{@language} #{@voice}"
+    Rails.logger.info "TTS: synthesizing \'#{text}\' for #{@language} #{@voice}"
   end
 
   # Return generated audio mp3 file for text parameter given in constructor
@@ -110,6 +115,9 @@ class TtsService < ApplicationService
   # @param language [String] language code (e.g. 'is-IS')
   # @return [String] voice name (e.g. 'Dora')
   def default_voice_for_language(language)
+    config = Rails.application.config.masdif[:tts]
+    return config[:default_voice] if TtsService.validate_voice(config[:default_voice], config[:language])
+
     throw Grammatek::TTS::ApiError("No available TTS voices") if SUPPORTED_VOICES.empty?
     SUPPORTED_VOICES.each do |voice|
       if voice.start_with?(language)
@@ -140,22 +148,23 @@ class TtsService < ApplicationService
     }
   end
 
-  def validate_voice(voice, language)
+  def self.validate_voice(voice, language)
     return false if voice.nil?
     return true if SUPPORTED_VOICES.include?("#{language}-#{voice}")
     false
   end
 
   # Server configuration for TTS API
-  # The configuration is read from config/tts.yml
+  # The configuration is read from config/masdif.yml
   def self.tts_config
-    config = Rails.application.config_for(:tts)
-    Rails.logger.info "Using TTS config: #{config}"
+    config = Rails.application.config.masdif[:tts]
+    Rails.logger.debug "Using TTS config: #{config}"
     Grammatek::TTS::Configuration.new do |c|
-      c.host = config[:tts_host] or raise "TTS host not configured"
-      c.base_path = config[:tts_base_path] or raise "TTS base path not configured"
-      c.scheme = config[:tts_host_scheme] or raise "TTS scheme not configured"
+      c.host = config[:host] or raise "TTS host not configured"
+      c.scheme = config[:host_scheme] or raise "TTS scheme not configured"
+      c.base_path = config[:base_path] or raise "TTS base path not configured"
       c.server_index = nil
+      c.debugging = config[:debugging] || false
     end
   end
 

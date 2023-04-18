@@ -62,31 +62,47 @@ message. The webhook is called with the users message and the dialog framework r
 response to RabbitMQ (TODO), saves all info to the database and returns the response to the client. Masdif extends the
 functionality of Rasa by adding TTS and ASR support.
 
-#### TTS
+### TTS
 
-TTS can be enabled or disabled on a message by message basis. It's enabled by default if no `tts:false` is sent inside
-the `metadata` object of the `PUT /conversations/:id` request, Masdif calls the TTS service and publishes the returned
-voice audio as a link to the generated audio file.
+TTS is the process of converting text into speech. Masdif uses external TTS services that can be used to convert the bot
+answers into speech. It can be globally enabled or disabled via the [Masdif configuration file](config/masdif.yml).
+
+TTS can also be enabled or disabled on a message by message basis. It's enabled by default if no `tts:false` is sent
+inside the `metadata` object of the `PUT /conversations/:id` request. This feature is useful for skipping TTS for
+frontends that don't support TTS or where the user is given the option to disable TTS. This also reduces the response
+time of the dialog framework. This option only works if TTS is enabled globally.
+
+Masdif calls the TTS service and publishes the returned voice audio as a link to the generated audio file.
 The audio file is a Rails active storage attachment and can be downloaded via the returned link. Active storage
-is by default configured to use the local file system, but can be easily configured to use a cloud storage service
+is by default configured to use the local file system, but can be easily configured to use a cloud storage services
 like AWS S3 as well. If you want to change the storage service, you have to change `config/storage.yml` and the
-`config/environments/production.rb` file.
+`config/environments/production.rb` file. Please refer to the
+[Rails documentation](https://edgeguides.rubyonrails.org/active_storage_overview.html) for more information.
 
-Audio file attachments are deleted after a certain time, which is configurable via `config/tts.yml` and the configuration
-value `tts_attachment_timeout` in seconds. The default is 5 minutes.
+Audio file attachments are deleted after a certain time, which is configurable via configuration value
+`attachment_timeout` in seconds. The default is 5 minutes.
 
-Currently, there are 2 publicly Icelandic TTS services available: the [Grammatek TTS API](https://api.grammatek.com/)
+#### TTS service
+
+Currently, there are 2 Open Source based Icelandic TTS services available: the [Grammatek TTS API](https://api.grammatek.com/)
 and the [Tíro TTS API](https://tts.tiro.is/). Both provide currently the same API and voices and are interchangeable.
 A configuration for both is provided in [.env.example](.env.example). If you want to see a list of all available voices,
 you can navigate to either [Grammatek TTS voices](https://api.grammatek.com/tts/v0/voices) or
 [Tíro TTS voices](https://tts.tiro.is/v0/voices).
 
-You can also run your own TTS service by running a compatible TTS service and adapt the configuration in
-[config/tts.yml](config/tts.yml). Please refer to the [SIM TTS documentation](https://github.com/tiro-is/tiro-tts) for more information.
+You can also run your own TTS service by running a SIM TTS service and adapt the configuration in
+[config/masdif.yml](config/masdif.yml). Please refer to the [SIM TTS documentation](https://github.com/tiro-is/tiro-tts)
+for more information.
 
-#### ASR
+#### Voice
 
-##### To be implemented
+The voice can be chosen either by setting the `voice` parameter in the `metadata` object of the `PUT /conversations/:id`
+request or by setting the `default_voice` configuration value in `config/masdif.yml`. The voice parameter of the
+request overrides the default voice.
+
+### ASR
+
+#### To be implemented
 
 For ASR, POST requests can be sent to the audio endpoint of the Masdif API. Masdif then forwards the given audio to
 the ASR service and uses the highest ranked result as new message to the dialog backend. The POST requests returns the
@@ -319,6 +335,17 @@ http://locahost:8080. It can be configured to be served at a different URL if yo
 [Masdif configuration file](config/masdif.yml) and change the setting `chat_widget.path` to another value.
 
 You can disable the web-chat widget by setting `chat_widget.enabled` to `false`.
+
+# Configuration
+The configuration for Masdif is located at `config/masdif.yml` and contains options for the Masdif application itself.
+You can use either normal YAML format but also use ERB to embed Ruby code into the configuration file, e.g. to read
+environment variables. The configuration file is loaded by the Rails application at startup and is available via
+`Rails.application.config.masdif`.
+
+The configuration can be further refined via `RAILS_ENV` specific configuration values. For example, if you want to change
+the configuration for the test environment, you can add a `test:` section to the configuration file.
+
+Other parts of the Rails application are following normal Rails conventions and can be configured adequately.
 
 # Development workflow
 

@@ -12,7 +12,7 @@
   </head>
 
   <body>
-    <% if defined?(@webchat_config) && @webchat_config.present? && @webchat_config['enabled'] %>
+    <% if defined?(@webchat_config) && @webchat_config.present? && @webchat_config[:enabled] %>
       <%= javascript_tag do %>
         window.onload = () => {
           Webchat.init("chat", {

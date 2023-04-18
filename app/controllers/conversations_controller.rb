@@ -191,7 +191,7 @@ class ConversationsController < ApplicationController
                                      filename: File.basename(tts_audio_file))
         @message.save!
         # expire audio files
-        config = Rails.application.config_for(:tts)
+        config = Rails.application.config.masdif[:tts]
         expiration_in_secs = config[:tts_attachment_timeout] || 60
         AttachmentCleanupJob.set(wait: expiration_in_secs.to_i).perform_later(@message)
       rescue StandardError => e
