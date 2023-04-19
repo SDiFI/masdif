@@ -7,6 +7,6 @@ class ChatController < ApplicationController
   private
 
   def set_config
-    @webchat_config = Rails.application.config.masdif['chat_widget']
+    @webchat_config = Rails.application.config.masdif[:chat_widget]
   end
 end

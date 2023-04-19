@@ -1,9 +1,30 @@
 # Masdif configuration
+# This file contains most configuration options for Masdif. You can configure also RAILS_ENV specific settings, if
+# you need different configuration for different environments.
 
-# Sdifi chat widget configuration options
-chat_widget:
-  # Enable or disable the chat widget
-  enabled: true
-  # The path to where the chat widget is served
-  path: /
+shared:
+  # Sdifi chat widget configuration options
+  chat_widget:
+    # Enable or disable the chat widget
+    enabled: true
+    # The path to where the chat widget is served
+    path: /
 
+  # Text to speech
+  tts:
+    # Enable or disable the text to speech feature
+    enabled: true
+    # The language to use
+    language: is-IS
+    # timeout in seconds for attachment cleanup
+    attachment_timeout: <%= ENV['TTS_ATTACHMENT_TIMEOUT'] || 5.minutes %>
+    # The type of TTS service to use, currently supported: "SIM"
+    type: SIM
+    # Settings for SIM TTS service
+    # The voice to use for the text to speech feature
+    default_voice: <%= ENV['TTS_VOICE_ID'] || "Alfur" %>
+    host: <%= ENV['TTS_HOST'] %>
+    base_path: <%= ENV['TTS_BASE_PATH'] %>
+    host_scheme: <%= ENV['TTS_HOST_SCHEME'] %>
+    # debugs tts requests
+    debugging: false
