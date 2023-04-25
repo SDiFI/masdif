@@ -31,6 +31,7 @@ class ConversationsController < ApplicationController
   #
   # Returns the conversation history for a given conversation ID.
   def show
+    return if @conversation.nil?
     render json: {conversation_id: @conversation.id, messages: @conversation.messages}
   end
 
@@ -97,6 +98,7 @@ class ConversationsController < ApplicationController
   # }]
   #
   def update
+    return if @conversation.nil?
     logger.info '================ REQUEST MSG START =============='
     if conversation_params[:metadata]
       meta_params = conversation_params[:metadata].to_json
@@ -161,6 +163,7 @@ class ConversationsController < ApplicationController
   # conversation ID itself can not be deleted as Rasa does not provide an API for this. One could add a job
   # that periodically removes old conversations from the database, but this is not implemented yet.
   def destroy
+    return if @conversation.nil?
     success = @conversation.destroy
     if success
       rasa = RasaHttp.new(RASA_HTTP_SERVER, RASA_HTTP_PORT, RASA_HTTP_PATH, RASA_HTTP_TOKEN)
@@ -207,19 +210,22 @@ class ConversationsController < ApplicationController
 
     # Use callbacks to share common setup or constraints between actions.
     def set_conversation
-      @conversation = Conversation.find(conversation_params[:id])
+      @conversation = Conversation.find_by(id: conversation_params[:id])
+      if @conversation.nil?
+        render json: {error: 'Conversation not found'}, status: :not_found
+      end
     end
 
     # Only allow a list of trusted parameters through.
-  def conversation_params
+    def conversation_params
       params.permit(:id, :language, :voice, :text, :conversation=> [], :metadata => [:voice_id, :language, :tts])
-  end
+    end
 
-  # Check if given object is true. This will do the following:
-  # - if the object is a boolean, return the boolean value
-  # - if the object is a string, return true if the string is "true" (case insensitive)
-  # - otherwise return false
-  def true?(obj)
-    obj.to_s.downcase == "true"
-  end
+    # Check if given object is true. This will do the following:
+    # - if the object is a boolean, return the boolean value
+    # - if the object is a string, return true if the string is "true" (case insensitive)
+    # - otherwise return false
+    def true?(obj)
+      obj.to_s.downcase == "true"
+    end
 end

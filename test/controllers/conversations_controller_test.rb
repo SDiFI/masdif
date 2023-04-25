@@ -147,4 +147,11 @@ class ConversationsControllerTest < ActionDispatch::IntegrationTest
     check_tts_attachment(response.parsed_body)
   end
 
+  test 'should return 404 in case an invalid conversation id is given' do
+    # implement
+    conversation = Conversation.new(status: 'inactive')
+    conversation.id = SecureRandom.uuid
+    patch conversation_url(conversation), params: { text: @msg_hi.text }, as: :json
+    assert_response :not_found
+  end
 end

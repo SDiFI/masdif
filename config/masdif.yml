@@ -1,6 +1,6 @@
 # Masdif configuration
 # This file contains most configuration options for Masdif. You can configure also RAILS_ENV specific settings, if
-# you need different configuration for different environments.
+# you need different configuration for different environments. ERB is also supported.
 
 shared:
   # Sdifi chat widget configuration options
@@ -10,11 +10,28 @@ shared:
     # The path to where the chat widget is served
     path: /
 
+  languages:
+    supported:
+      - lang: is-IS
+        explanation: Ég tala íslensku
+    # default language of the chatbot, i.e. the language of the model, the knowledge base, etc.
+    # This needs to be one of the supported languages above
+    default: is-IS
+
+  motd:
+    # Rasa intent to use for the message of the day
+    rasa_intent: motd
+    # Alternative text to use if the rasa intent is not defined, language specific
+    default:
+      is-IS:
+        - "Halló"
+        - "Hvernig get ég aðstoðað?"
+
   # Text to speech
   tts:
     # Enable or disable the text to speech feature
     enabled: true
-    # The language to use
+    # The TTS language
     language: is-IS
     # timeout in seconds for attachment cleanup
     attachment_timeout: <%= ENV['TTS_ATTACHMENT_TIMEOUT'] || 5.minutes %>
@@ -28,3 +45,23 @@ shared:
     host_scheme: <%= ENV['TTS_HOST_SCHEME'] %>
     # debugs tts requests
     debugging: false
+
+
+test:
+  languages:
+    supported:
+      - lang: is-IS
+        explanation: ég tala Íslensku
+      - lang: en-US
+        explanation: I speak English
+    default: is-IS
+
+  motd:
+    rasa_intent: motd
+    default:
+      is-IS:
+        - "Halló"
+        - "Hvernig get ég aðstoðað?"
+      en-US:
+        - "Hello"
+        - "How can I help you?"
