@@ -2,7 +2,7 @@ name: Masdif deploy when tag is pushed
 run-name: ${{ github.actor }} deploys Masdif for ${{ github.ref }} on ${{ github.event_name }}
 env:
   APPLICATION_VERSION: ${{ github.ref_name }}
-  FUSEKI_VERSION: 4.7.0
+  FUSEKI_VERSION: 4.8.0
   RASA_MODEL_VERSION: v0.1
   POSTGRES_HOSTNAME: db
   POSTGRES_USER: postgres

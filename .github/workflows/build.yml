@@ -2,7 +2,7 @@ name: Masdif Build containers
 run-name: ${{ github.actor }} builds Masdif for ${{ github.ref }} on ${{ github.event_name }}
 env:
   APPLICATION_VERSION: ${{ github.sha }}
-  FUSEKI_VERSION: 4.7.0
+  FUSEKI_VERSION: 4.8.0
   POSTGRES_HOSTNAME: db
   POSTGRES_USER: postgres
   RABBITMQ_USER: user
