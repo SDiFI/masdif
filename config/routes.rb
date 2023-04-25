@@ -12,6 +12,8 @@ Rails.application.routes.draw do
 
   resources :conversations
 
+  get '/info', to: 'info#index'
+
   # defines the route for the health check
   get '/health', to: 'health#index'
 

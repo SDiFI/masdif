@@ -173,8 +173,96 @@ class RasaHttp
     end
   end
 
+  # Evaluates given text on Rasa model and returns the evaluation results without modifying the tracker state.
+  # This can be used to see how the model would respond to a given message without making it part of the conversation.
+  #
+  # An example of a request:
+  # {
+  #   "text": "Hello!",
+  #   "message_id": "unique_id"
+  # }
+  #
+  # An example of a response:
+  # {
+  #   "entities": [
+  #     {
+  #       "start": 0,
+  #       "end": 0,
+  #       "value": "string",
+  #       "entity": "string",
+  #       "confidence": 0
+  #     }
+  #   ],
+  #   "intent": {
+  #     "confidence": 0.6323,
+  #     "name": "greet"
+  #   },
+  #   "intent_ranking": [
+  #     {
+  #       "confidence": 0.6323,
+  #       "name": "greet"
+  #     }
+  #   ],
+  #   "text": "Hello!"
+  # }
+  #
+  # @param [String] text The text to evaluate
+  # @param [String] msg_id The message id (optional - will be generated if not given)
+  def model_parse(text, msg_id = nil)
+    message_id = msg_id || SecureRandom.uuid
+    @conn.post build_path("/model/parse") do |req|
+      req.params[:token] = @token
+      req.body = JSON.generate(text: text, message_id: message_id)
+    end
+  end
+
+  # Triggers directly given intent without passing through NLU pipeline.
+  # This can be used to directly trigger an action or to circumvent the NLU pipeline if the intent was
+  # predicted otherwise.
+  #
+  # An example of a request:
+  # {
+  #   "name": "greet",
+  #   "entities": {
+  #     "temperature": "high"
+  #   }
+  # }
+  # Example of a response:
+  # {
+  #   "tracker": { .. },
+  #   "messages": [
+  #     {
+  #       "recipient_id": "string",
+  #       "text": "string",
+  #       "image": "string",
+  #       "buttons": [
+  #         {
+  #           "title": "string",
+  #           "payload": "string"
+  #         }
+  #       ],
+  #       "attachment": [
+  #         {
+  #           "title": "string",
+  #           "payload": "string"
+  #         }
+  #       ]
+  #     }
+  #   ]
+  # }
+  # @param [String] conversation_id The conversation id
+  # @param [String] intent          The intent to trigger
+  # @param [Hash]   entities        The entities for the intent
+  #
+  # @note: The state of the tracker is modified as if the intent was predicted by the NLU pipeline.
+  def trigger_intent(conversation_id, intent, entities = {})
+    @conn.post build_path("/conversations/#{conversation_id}/trigger_intent") do |req|
+      req.params[:token] = @token
+      req.body = JSON.generate(name: intent, entities: entities)
+    end
+  end
+
   def todo
-    # POST /model/parse
     # POST /model/predict
     # PUT /model
     # POST /model/test/intents
@@ -182,7 +270,5 @@ class RasaHttp
     # POST /model/train
     # DELETE /model
     # POST /conversations/{conversation_id}/execute
-    # POST /conversations/{conversation_id}/trigger_intent
-    #
   end
 end

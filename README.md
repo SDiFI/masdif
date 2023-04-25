@@ -10,8 +10,12 @@ RabbitMQ and Redis for external communication or for future extension points.
 Masdif is not meant to be your Rasa training environment. You need to obtain a previously trained Rasa model
 and then use Masdif to deploy it in the context of conversational AI
 
-We provide configurations for using Rasa in Icelandic via the repositories https://github.com/SDiFI/sdifi_rasa_akranes
-and https://github.com/SDiFI/sdifi_rasa_ja. These Rasa projects can also be used standalone without Masdif.
+We provide configurations for using Rasa in Icelandic via the repositories [Municipal demo]
+(https://github.com/SDiFI/sdifi_rasa_akranes) and [Phone assistant demo](https://github.com/SDiFI/sdifi_rasa_gagnatorg).
+These Rasa projects can also be used standalone without Masdif.
+
+The Municipality live demo is accessible [here](https://municipality.sdifi.com/). It's automatically deployed from the CI
+build of Github, if a new tag is pushed to this repository.
 
 # General architecture
 
@@ -22,13 +26,15 @@ easily integrated into a web page. The widget source code can be found [here](ht
 
 The following API endpoints are provided:
 
-- `GET  /` - Serves the chat widget (configurable)
-- `GET  /status` - Returns the status of the API
+- `GET  /` - Serves the chat widget (path configurable)
 - `GET  /conversations` - Returns a list of all conversations
 - `GET  /conversations/:id` - Returns history for a single conversation
 - `POST /conversations/` - Creates a new conversation, returns JSON with the conversation id
 - `PATCH/PUT /conversations/:id` - Appends message to conversation with given id, receives bot response as JSON
 - `DELETE /conversations/:id` - Deletes conversation with given id, TODO: needs to be protected
+- `GET /info` - Returns information about the bot. This is typically the first request sent by the client and is
+   used to initialize the chat widget with e.g. the motd and supported languages.
+- `GET  /status` - Returns the status of the API
 
 The following API endpoints are planned for future versions:
 
@@ -40,10 +46,6 @@ The following API endpoints are planned for future versions:
 The client sends messages via POST requests to Masdif. The POST request blocks on completion of all involved services.
 All id's are UUID's and therefore unique. Only the client knows the conversation id, which is used to identify the
 conversation in the database.
-
-To be implemented:
-
-- [ ] Add a timeout and lock the conversation after the last message has been sent for a certain time
 
 ##  Conversational services
 
@@ -343,9 +345,32 @@ environment variables. The configuration file is loaded by the Rails application
 `Rails.application.config.masdif`.
 
 The configuration can be further refined via `RAILS_ENV` specific configuration values. For example, if you want to change
-the configuration for the test environment, you can add a `test:` section to the configuration file.
+the configuration for the test environment, you can add a `test:` section to the configuration file, similarly for
+development and production environments.
 
 Other parts of the Rails application are following normal Rails conventions and can be configured adequately.
+
+The Masdif configuration file contains the following sections:
+
+## chat_widget
+The `chat_widget` section contains options for the web chat widget. You can enable/disable the widget and change the
+path where it is served.
+
+## languages
+The `languages` section contains a list of languages that are supported by the bot. The language codes are returned by
+`GET /info` requests to e.g. give the chat widget the option to show a language chooser.
+
+## motd (Message of the day)
+The `motd` section contains a list of messages that are shown to the user when they start a session with the bot. These
+are defaults in case the Rasa intent configured via `rasa_intent` is not defined or returns with an error. You can
+define a message for each supported language. Ideally, a Rasa intent implementing the `motd` backend protocol should be
+used to provide the message of the day. We provide an appropriate implementation in the [SDiFI Rasa
+repository](https://github.com/SDiFI/sdifi_rasa_akranes).
+
+## tts (Text-to-speech)
+The `tts` section contains options for the text-to-speech engine. Currently, only the [SIM]
+(https://github.com/tiro-is/tiro-tts) TTS engine is supported. You can configure the URL of the TTS server and the
+default voice to use as well as e.g. enable/disable TTS.
 
 # Development workflow
 
