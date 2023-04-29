@@ -6,7 +6,7 @@
 # us parallelize incoming requests. If we want to optimize this, we can use a connection pool.
 
 class RasaHttp
-  DEFAULT_METADATA = { language: 'is-IS' }.freeze
+  DEFAULT_METADATA = { asr_generated: false, language: 'is-IS' }.freeze
 
   def initialize(host, port, base_path, token)
     if host.start_with?('http://') || host.start_with?('https://')

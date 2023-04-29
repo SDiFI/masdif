@@ -70,6 +70,7 @@ class ConversationsController < ApplicationController
   #   "text": "message text"
   #   "metadata":
   #       {
+  #        "asr_generated": "true",
   #        "language": "is-IS",
   #        "tts": "true",
   #        "voice_id": "Dora",
@@ -218,7 +219,8 @@ class ConversationsController < ApplicationController
 
     # Only allow a list of trusted parameters through.
     def conversation_params
-      params.permit(:id, :language, :voice, :text, :conversation=> [], :metadata => [:voice_id, :language, :tts])
+      params.permit(:id, :language, :voice, :text, :conversation=> [],
+                    :metadata => [:asr_generated, :language, :tts, :voice_id])
     end
 
     # Check if given object is true. This will do the following:
