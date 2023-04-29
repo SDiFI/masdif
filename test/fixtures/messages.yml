@@ -6,21 +6,21 @@
 #
 hi:
   text: halló
-  meta_data: { tts: false }
+  meta_data: { tts: false, asr_generated: false }
   conversation: one
 
 bye:
   text: bless
-  meta_data: { tts: true }
+  meta_data: { tts: true, asr_generated: true }
   conversation: one
 
 button:
   text: hver er bæjastjóri ?
-  meta_data: { tts: true }
+  meta_data: { tts: true, asr_generated: true }
   conversation: one
 
 phone:
   text: símanúmer
-  meta_data: { tts: true }
+  meta_data: { tts: true, asr_generated: false }
   conversation: one
 
