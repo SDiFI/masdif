@@ -13,11 +13,11 @@ class InfoController < ApplicationController
   #             supported, an HTTP error status code NOT_FOUND is returned.
   # Example return value:
   # {
-  # 	"motd": {
-  #     "lang" : "is-IS",
-  #     "motd": ["Góðan dag. Ég get svarað spurningum um Andabæ",
-  #              "Alls ekki láta mig fá persónuupplýsingar eins og nafn eða kennitölu."]
-  #   },
+  # 	"motd": [{
+  #     "Góðan dag. Ég get svarað spurningum um Andabæ"
+  #    }, {
+  #     "Alls ekki láta mig fá persónuupplýsingar eins og nafn eða kennitölu."
+  #   }],
   # 	"supported_languages": [{
   # 		"lang": "is-IS",
   # 		"explanation": "ég tala Íslensku"
@@ -38,20 +38,41 @@ class InfoController < ApplicationController
     end
     rv = { 'supported_languages' => @supported_languages }
 
-    rasa = RasaHttp.new(RASA_HTTP_SERVER, RASA_HTTP_PORT, RASA_HTTP_PATH, RASA_HTTP_TOKEN)
-    rasa_response = rasa.trigger_intent(@conversation.id, @motd_config[:rasa_intent], {language: language})
-    if rasa_response.status == 200
-      Rails.logger.debug("Rasa response: #{rasa_response}")
-      rv['motd'] = rasa_response.body['responses']
-    else
-      Rails.logger.warn("Rasa: MOTD intent not recognized !")
-      # Use default MOTD
-      rv['motd'] = @motd_config[:default][@default_language.to_sym]
-    end
+    # Use default MOTD if rasa_motd doesn't retrieve one
+    rv['motd'] = rasa_motd(language) || @motd_config[:default][@default_language.to_sym]
     render json: rv, status: :ok
   end
 
   private
+
+  # Retrieve MOTD from Rasa. Return an array of strings or nil if no MOTD was found.
+  def rasa_motd(language)
+    Rails.logger.info("Request MOTD for language #{language} ...")
+    rasa = RasaHttp.new(RASA_HTTP_SERVER, RASA_HTTP_PORT, RASA_HTTP_PATH, RASA_HTTP_TOKEN)
+    rasa_response = rasa.trigger_intent(@conversation.id, @motd_config[:rasa_intent], { language: language })
+
+    unless rasa_response.status == 200
+      Rails.logger.warn("Rasa: MOTD intent not recognized !")
+      return nil
+    end
+
+    intent_messages = rasa_response.body.dig('messages')
+    return Rails.logger.warn("Rasa: MOTD intent returned no results ?!") unless intent_messages&.size > 0
+
+    intent_text = intent_messages[0].dig('text')
+    return unless intent_text.is_a?(String)
+
+    motd_h = JSON.parse(intent_text)
+    motd = motd_h&.dig('motd', 'motd')
+    if motd.nil?
+      Rails.logger.warn("Rasa: MOTD intent returned no motd at expected location: #{pp intent_messages}")
+    end
+    if motd_h&.dig('motd', 'language') != language
+      Rails.logger.warn("Rasa: MOTD intent returned motd for wrong language: #{pp intent_messages}")
+      motd = nil
+    end
+    motd
+  end
 
   # Sets configuration variables and tests for errors.
   def set_config
