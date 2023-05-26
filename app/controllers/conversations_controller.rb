@@ -219,7 +219,7 @@ class ConversationsController < ApplicationController
 
     # Only allow a list of trusted parameters through.
     def conversation_params
-      params.permit(:id, :language, :voice, :text, :conversation=> [],
+      params.permit(:id, :language, :voice, :text, :conversation => {},
                     :metadata => [:asr_generated, :language, :tts, :voice_id])
     end
 
