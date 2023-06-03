@@ -10,6 +10,15 @@ shared:
     # The path to where the chat widget is served
     path: /
 
+  # Feedback configuration options
+  feedback:
+    # Forward the feedback to dialog system or not. In case of false, the feedback is only stored in the database
+    forward: false
+    # The intent to where the feedback is served
+    intent: feedback
+    # include reply message for which the feedback is given
+    include_reply_text: true
+
   languages:
     supported:
       - lang: is-IS
@@ -51,7 +60,7 @@ test:
   languages:
     supported:
       - lang: is-IS
-        explanation: ég tala Íslensku
+        explanation: Ég tala íslensku
       - lang: en-US
         explanation: I speak English
     default: is-IS

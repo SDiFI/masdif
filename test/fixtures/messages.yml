@@ -6,21 +6,34 @@
 #
 hi:
   text: halló
+  feedback: none
   meta_data: { tts: false, asr_generated: false }
   conversation: one
 
 bye:
   text: bless
+  feedback: none
   meta_data: { tts: true, asr_generated: true }
   conversation: one
 
-button:
+baejastjori:
   text: hver er bæjastjóri ?
+  feedback: none
   meta_data: { tts: true, asr_generated: true }
   conversation: one
 
 phone:
   text: símanúmer
+  feedback: none
   meta_data: { tts: true, asr_generated: false }
   conversation: one
 
+library:
+  text: bókasafn
+  meta_data: { tts: true, asr_generated: false }
+  conversation: one
+
+feedback:
+  text: '/feedback{"value": "good"}'
+  meta_data: { tts: false, asr_generated: false }
+  conversation: one

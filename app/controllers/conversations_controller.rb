@@ -9,9 +9,12 @@ module ActiveStorage::Blob::Analyzable
 end
 
 class ConversationsController < ApplicationController
+  include FeedbackConcern
+
   skip_forgery_protection
   before_action :transform_params
   before_action :set_conversation, only: %i[ show update destroy ]
+  before_action :set_feedback, only: %i[ update ]
 
   # GET /conversations
   # GET /conversations.json
@@ -40,7 +43,7 @@ class ConversationsController < ApplicationController
   #
   # Creates a new conversation and returns the ID of the new conversation. So far, no parameters are required.
   def create
-    @conversation = Conversation.new(status: 'new', feedback: 'none')
+    @conversation = Conversation.new(status: 'new')
     if @conversation.save!
       # add a restart event to the conversation
       event = "restart"
@@ -68,6 +71,7 @@ class ConversationsController < ApplicationController
   #  the request message has the following format:
   #  {
   #   "text": "message text"
+  #   "message_id": "SOME_UUID",    (only valid in combination with /feedback{"value": "some_value"})
   #   "metadata":
   #       {
   #        "asr_generated": "true",
@@ -81,6 +85,7 @@ class ConversationsController < ApplicationController
   #
   # [{
   # 	"text": "blubber",
+  #   "message_id": "UUID_FOR_THE_MESSAGE",
   # 	"data": {
   # 		"elements": null,
   # 		"quick_replies": null,
@@ -99,8 +104,9 @@ class ConversationsController < ApplicationController
   # }]
   #
   def update
-    return if @conversation.nil?
+    return if @conversation.nil? || @feedback_error
     logger.info '================ REQUEST MSG START =============='
+
     if conversation_params[:metadata]
       meta_params = conversation_params[:metadata].to_json
     else
@@ -116,14 +122,26 @@ class ConversationsController < ApplicationController
     end
     use_tts = true?(meta_data['tts'])
     tts_result = use_tts ? Message.default_tts_result : 'disabled'
+
     @message = @conversation.messages.create(text: conversation_params[:text], meta_data: meta_data, tts_result: tts_result)
     if @message
+      if @feedback
+        unless @feedback[:do_forward]
+          # reply without forwarding to dialog engine
+          render json: empty_response_message(language, meta_data)
+          return
+        end
+        # forward the feedback text to the dialog engine
+        message_text = @feedback[:msg_text]
+      else
+        message_text = conversation_params[:text].to_s
+      end
+
       rasa = RasaHttp.new(RASA_HTTP_SERVER, RASA_HTTP_PORT, RASA_HTTP_PATH, RASA_HTTP_TOKEN)
-      rasa_response = rasa.rest_msg(@conversation.id.to_s, conversation_params[:text].to_s, meta_data)
+      rasa_response = rasa.rest_msg(@conversation.id.to_s, message_text, meta_data)
       # rasa_response is an array of hashes
       json_reply = rasa_response.body
       if rasa_response.status == 200
-        @message.reply = rasa_response.body
         if rasa_response.body.size > 0 and use_tts
           # we combine all text responses into one string for latency reasons
           rasa_answer = rasa_response.body.map{|t| t['text']}.join(' ')
@@ -138,11 +156,17 @@ class ConversationsController < ApplicationController
             @message.tts_result = 'error'
           end
         end
-        @message.save
-        # provide meta data back to all responses
-        json_reply.each do |reply|
-          reply.merge!( metadata: meta_data.merge(language: language))
+
+        # provide meta data and message_id back to all responses
+        if json_reply.size > 0
+          json_reply.each do |reply|
+            reply.merge!( metadata: meta_data.merge(language: language), message_id: @message.id.to_s)
+          end
+        else
+          json_reply = empty_response_message(language, meta_data)
         end
+        @message.reply = json_reply.to_json
+        @message.save
         render json: json_reply
       else
         @message.update!(reply: rasa_response.reason_phrase)
@@ -182,6 +206,22 @@ class ConversationsController < ApplicationController
 
   private
 
+    # Just a bare-bones response message that is returned if e.g. a client feedback is not forwarded
+    # or if the dialog system does not return any response.
+    #
+    # @param language [String] the language of the conversation
+    # @param meta_data [Hash] the meta data of the conversation
+    # @return [Array] the feedback message
+    def empty_response_message(language, meta_data)
+      [
+        {
+          metadata: meta_data.merge(language: language),
+          message_id: @message.id.to_s,
+          recipient_id: @conversation.id.to_s
+        }
+      ]
+    end
+
     # Call TTS service and attach audio response to the message
     # @param [String] tts_text text to be converted to audio
     # @param [String] language language of the text
@@ -219,7 +259,7 @@ class ConversationsController < ApplicationController
 
     # Only allow a list of trusted parameters through.
     def conversation_params
-      params.permit(:id, :language, :voice, :text, :conversation => {},
+      params.permit(:id, :language, :voice, :text, :message_id, :conversation => {},
                     :metadata => [:asr_generated, :language, :tts, :voice_id])
     end
 

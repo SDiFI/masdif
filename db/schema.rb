@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.0].define(version: 2023_02_10_195419) do
+ActiveRecord::Schema[7.0].define(version: 2023_06_03_121425) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pgcrypto"
   enable_extension "plpgsql"
@@ -47,7 +47,6 @@ ActiveRecord::Schema[7.0].define(version: 2023_02_10_195419) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.string "status"
-    t.string "feedback"
   end
 
   create_table "messages", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
@@ -58,6 +57,7 @@ ActiveRecord::Schema[7.0].define(version: 2023_02_10_195419) do
     t.jsonb "meta_data"
     t.string "reply"
     t.string "tts_result", default: "none"
+    t.string "feedback", default: "none"
     t.index ["conversation_id"], name: "index_messages_on_conversation_id"
   end
 

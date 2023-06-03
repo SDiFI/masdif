@@ -356,6 +356,16 @@ The Masdif configuration file contains the following sections:
 The `chat_widget` section contains options for the web chat widget. You can enable/disable the widget and change the
 path where it is served.
 
+## feedback
+The `feedback` section contains options for the feedback provided by the user. Feedback is stored per response
+message, i.e. it's possible to provide feedback for each response the bot utters. The webchat widget provides a
+thumbs up/down button under each bot response message. If the user clicks on a feedback button, a string
+associated with that button is sent to Masdif. In the configuration, you can enable forwarding feedback to the dialog
+system via a configurable intent. You can also enable adding the original message text to the intent the feedback refers
+to. This text is then sent as a "text" entity parameter to the feedback intent. Forwarding the feedback to the dialog
+system enables reaction to user feedback. If you don't want to forward feedback to the dialog system, the feedback
+string is just stored in the database and can later be reviewed by an administrator.
+
 ## languages
 The `languages` section contains a list of languages that are supported by the bot. The language codes are returned by
 `GET /info` requests to e.g. give the chat widget the option to show a language chooser.
