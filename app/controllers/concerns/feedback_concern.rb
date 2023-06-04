@@ -16,7 +16,7 @@ module FeedbackConcern
           @feedback[:message_id] = message_id.to_s
           do_fwd, msg_text = build_feedback_message(message_id.to_s, feedback_value)
           @feedback[:do_forward] = do_fwd
-          @feedback[:message_text] = msg_text
+          @feedback[:text] = msg_text
         else
           @feedback_error = true
         end
