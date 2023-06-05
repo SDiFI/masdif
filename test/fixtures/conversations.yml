@@ -6,8 +6,6 @@
 #
 one:
   status: 'active'
-  feedback: 'none'
 
 two:
   status: 'inactive'
-  feedback: 'positive'

@@ -127,7 +127,8 @@ class RasaHttp
   #
   # @param [String] sender_id The sender id
   # @param [String] msg The message
-  # @return [String] The response. JSON encoded string containing an array with the following keys:
+  # @return [Faraday::Response] The response. response.body is a JSON encoded string containing an array with the
+  #                             following keys:
   #     `recipient_id`, `text`, `buttons`. The buttons are optional and only present if the bot
   #     response contained buttons. The buttons are an array of dictionaries with the following keys
   #     `title`, `payload`. The `payload` is the value that will be sent back to the bot if the user
