@@ -5,8 +5,8 @@ class Message < ApplicationRecord
   # a short time and delete it after processing.
   has_one_attached :asr_audio
 
-  # tts audio file as returned from the TTS service
-  has_one_attached :tts_audio
+  # tts audio file(s) as returned from the TTS service
+  has_many_attached :tts_audio
 
   def self.default_tts_result
     'none'

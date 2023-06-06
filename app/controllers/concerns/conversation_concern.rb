@@ -97,23 +97,22 @@ module ConversationConcern
     return if responses.nil?
     answer = responses&.map {|t| t['text']}&.join(' ')
     answer ||= t(:no_service)
-    call_tts(answer, @language, @voice)
-
-    if @message.tts_audio.attached?
-      attach_tts_audio_url(responses[0])
-      @message.tts_result = 'success'
-    else
+    blob = call_tts(answer, @language, @voice)
+    if blob.nil?
       @message.tts_result = 'error'
+    else
+      attach_tts_audio_url(responses[0], rails_blob_path(blob))
+      @message.tts_result = 'success'
     end
   end
 
   # Attaches the TTS audio url to the json reply
   #
   # @param [Hash] response the response hash from the dialog system
+  # @param [String] url the url to the TTS audio
   # @return [void]
-  def attach_tts_audio_url(response)
-    tts_audio_url = rails_storage_proxy_url(@message.tts_audio)
-    response.merge!('data' => { 'attachment' => [{ 'type' => 'audio', 'payload' => { 'src' => tts_audio_url } }]})
+  def attach_tts_audio_url(response, url)
+    response.merge!('data' => { 'attachment' => [{ 'type' => 'audio', 'payload' => { 'src' => url } }]})
   end
 
   # Appends the meta data and message id to the json reply
@@ -144,25 +143,43 @@ module ConversationConcern
   end
 
   # Call TTS service and attach audio response to the message
+  #
   # @param [String] tts_text text to be converted to audio
   # @param [String] language language of the text
   # @param [String] voice voice to be used for the audio
+  # @return [ActiveStorage::Blob, nil] the tts audio attachment blob
   def call_tts(tts_text, language, voice)
     Rails.logger.info '================ START TTS ==============='
+    audio_blob = nil
     begin
       Rails.logger.debug("TTS input: #{tts_text}, #{language}")
       tts_audio_file = TtsService.call(tts_text, language, voice)
-      @message.tts_audio.attach(io: File.open("#{TtsService.audio_path}/#{tts_audio_file}"),
-                                filename: File.basename(tts_audio_file))
+
+      audio_blob = ActiveStorage::Blob.create_and_upload!(
+        io: File.open("#{tts_audio_file}"),
+        filename: File.basename(tts_audio_file),
+        content_type: 'audio/mpeg',
+        identify: false
+      )
+      @message.tts_audio.attach audio_blob
       @message.save!
-      # expire audio files
-      config = Rails.application.config.masdif[:tts]
-      expiration_in_secs = config[:tts_attachment_timeout] || 60
-      AttachmentCleanupJob.set(wait: expiration_in_secs.to_i).perform_later(@message)
+
+      FileUtils.rm_f(tts_audio_file)
+      add_cleanup_job(@message.id)
     rescue StandardError => e
       TtsService.no_service(e)
     end
     Rails.logger.info '================ END TTS ================='
+    audio_blob
+  end
+
+  # Add cleanup job to delete audio file after configured time
+  # @param [String] message_id id of the message
+  # @return [void]
+  def add_cleanup_job(message_id)
+    config = Rails.application.config.masdif[:tts]
+    expiration_in_secs = config[:attachment_timeout] || 60
+    AttachmentCleanupJob.set(wait: expiration_in_secs.to_i).perform_later(message_id, type: :tts_audio)
   end
 
   # Transform the request parameters to snake_case, to make them compatible with Rails models
