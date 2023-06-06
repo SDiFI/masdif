@@ -72,7 +72,7 @@ module ConversationConcern
   # @param responses [Array, nil] response from the dialog system, already parsed from json
   # @return [String] the json reply
   def process_successful_response(responses)
-    if responses&.size > 0
+    if responses&.size&.positive?
       process_tts(responses) if @use_tts
       append_metadata_and_message_id(responses)
     else
@@ -122,7 +122,9 @@ module ConversationConcern
   def append_metadata_and_message_id(response)
     return if response.nil?
     response&.each do |reply|
-      reply.merge!( metadata: @meta_data.merge(language: @language), message_id: @message.id.to_s)
+      reply.merge!( metadata: @meta_data.merge(language: @language),
+                    message_id: @message.id.to_s,
+                    recipient_id: @conversation.id.to_s)
     end
   end
 
