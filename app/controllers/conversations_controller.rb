@@ -36,6 +36,7 @@ class ConversationsController < ApplicationController
   # Returns the conversation history for a given conversation ID.
   def show
     return if @conversation.nil?
+
     render json: {conversation_id: @conversation.id, messages: @conversation.messages}
   end
 
@@ -106,8 +107,8 @@ class ConversationsController < ApplicationController
   #
   def update
     return if @conversation.nil? || @feedback_error
-    logger.info '================ REQUEST MSG START =============='
 
+    logger.info '================ REQUEST MSG START =============='
     prepare_meta_data
 
     @message = @conversation.messages.create(text: conversation_params[:text], meta_data: @meta_data, tts_result: @tts_result)
@@ -140,6 +141,7 @@ class ConversationsController < ApplicationController
   # that periodically removes old conversations from the database, but this is not implemented yet.
   def destroy
     return if @conversation.nil?
+
     success = @conversation.destroy
     if success
       rasa = RasaHttp.new(RASA_HTTP_SERVER, RASA_HTTP_PORT, RASA_HTTP_PATH, RASA_HTTP_TOKEN)

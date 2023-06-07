@@ -1,4 +1,4 @@
-FROM ruby:3.2.1-slim-buster
+FROM ruby:3.2.2-slim-bullseye
 
 RUN apt-get update -qq && apt-get install -y build-essential libpq-dev ssh sox curl software-properties-common
 RUN apt-get install -y git zlib1g-dev liblzma-dev patch pkg-config libxml2-dev libxslt-dev ffmpeg vim
@@ -28,7 +28,7 @@ RUN bundle install --jobs 20 --retry 5
 # Adding project files
 COPY . $RAILS_ROOT
 RUN RAILS_ENV=production bundle exec rails assets:precompile
-RUN rm -f config/master.key
+RUN rm -f config/master.key .env .env.deploy
 
 EXPOSE 8080
 

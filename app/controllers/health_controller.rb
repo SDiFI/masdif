@@ -41,8 +41,7 @@ class HealthController < ApplicationController
         rv = :DOWN
       end
     rescue StandardError => e
-      e.backtrace&.each { |line| Rails.logger.error(line) }
-      Rails.logger.error("Rasa error: #{e}")
+      Rails.logger.error("Rasa error: #{e} ... this error at startup means, Rasa is not yet fully up")
       rv = :DOWN
     end
     rv
@@ -61,7 +60,7 @@ class HealthController < ApplicationController
       end
     rescue ActiveRecord::NoDatabaseError => e
       Rails.logger.error("Database error: #{e}")
-    rescue MigrationError => e
+    rescue ActiveRecord::MigrationError => e
       Rails.logger.error("Database migration error: #{e}")
     rescue StandardError => e
       Rails.logger.error("Error: #{e}")

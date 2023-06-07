@@ -10,11 +10,11 @@ tmp/
 vendor/
 # rasa subdirectory
 rasa/.gitignore
-rasa/.git/
-rasa/.idea/
 rasa/.rasa/
 rasa/db/
 rasa/logs/
 rasa/models/
 rasa/results/
 rasa/venv/
+
+docker-compose.override.yml
