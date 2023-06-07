@@ -28,7 +28,7 @@ RUN bundle install --jobs 20 --retry 5
 # Adding project files
 COPY . $RAILS_ROOT
 RUN RAILS_ENV=production bundle exec rails assets:precompile
-RUN rm -f config/master.key
+RUN rm -f config/master.key .env .env.deploy
 
 EXPOSE 8080
 
