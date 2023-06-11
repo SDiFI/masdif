@@ -55,10 +55,10 @@ class ConversationsController < ApplicationController
       rasa_response = rasa.add_event(@conversation.id.to_s, event, "", meta_data)
       Rails.logger.info("Rasa response: #{rasa_response}")
       if rasa_response.status == 200
-        restart_msg.update!(reply: rasa_response.body)
+        restart_msg.update!(reply: rasa_response.body.to_json)
         render json: {conversation_id: @conversation.id}
       else
-        restart_msg.update!(reply: rasa_response.reason_phrase)
+        restart_msg.update!(reply: rasa_response.reason_phrase.to_json)
         render json: {error: 'Rasa server error'}, status: :internal_server_error
       end
     else

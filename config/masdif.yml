@@ -3,6 +3,11 @@
 # you need different configuration for different environments. ERB is also supported.
 
 shared:
+  admin_interface:
+    enabled: false
+    # The path to where the admin interface is served is configurable via config/initializers/active_admin.rb
+    # The default path is /admin.
+
   # Sdifi chat widget configuration options
   chat_widget:
     # Enable or disable the chat widget

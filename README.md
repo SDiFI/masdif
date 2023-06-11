@@ -352,6 +352,16 @@ Other parts of the Rails application are following normal Rails conventions and 
 
 The Masdif configuration file contains the following sections:
 
+## admin_interface
+We provide a simple admin interface for Masdif which is based on the [ActiveAdmin](https://activeadmin.info/) gem.
+By default, you can access it at the route `/admin`, but you can configure different routes according to your needs.
+Please consult the ActiveAdmin documentation for further information.
+
+The initial credentials for an administrator are determined at the time you are seeding the database. For development,
+the standard password is used as provided in [seeds.rb](db/seeds.rb). For production, you need to set the environment
+variables `ADMIN_USER`, `ADMIN_PASSWORD` at database seed time. After seeding the database, you can change the
+password of the administrator via the admin interface and also add new users.
+
 ## chat_widget
 The `chat_widget` section contains options for the web chat widget. You can enable/disable the widget and change the
 path where it is served.

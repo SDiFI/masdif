@@ -47,7 +47,7 @@ gem "tzinfo-data", platforms: %i[ mingw mswin x64_mingw jruby ]
 gem "bootsnap", require: false
 
 # Use Sass to process CSS
-# gem "sassc-rails"
+gem "sassc-rails"
 
 # Use Active Storage variants [https://guides.rubyonrails.org/active_storage_overview.html#transforming-images]
 # gem "image_processing", "~> 1.2"
@@ -82,3 +82,13 @@ end
 # External services
 gem 'grammatek-tts', :git => 'https://github.com/grammatek/tts-ruby-gem.git', ref: 'v0.4'
 gem "sidekiq"
+
+# Active admin
+gem 'activeadmin'
+
+# Plus integrations with:
+gem 'devise'
+gem 'cancancan'
+gem 'draper'
+gem 'pundit'
+gem 'chartkick'
