@@ -8,11 +8,10 @@ module ActiveStorage::Blob::Analyzable
   end
 end
 
-class ConversationsController < ApplicationController
+class ConversationsController < ActionController::API
   include FeedbackConcern
   include ConversationConcern
 
-  skip_forgery_protection
   before_action :transform_params
   before_action :set_conversation, only: %i[ show update destroy ]
   before_action :set_feedback, only: %i[ update ]

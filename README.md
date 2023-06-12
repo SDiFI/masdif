@@ -32,6 +32,7 @@ The following API endpoints are provided:
 - `POST /conversations/` - Creates a new conversation, returns JSON with the conversation id
 - `PATCH/PUT /conversations/:id` - Appends message to conversation with given id, receives bot response as JSON
 - `DELETE /conversations/:id` - Deletes conversation with given id, TODO: needs to be protected
+- `GET /health` - Returns the health status of the API
 - `GET /info` - Returns information about the bot. This is typically the first request sent by the client and is
    used to initialize the chat widget with e.g. the motd and supported languages.
 - `GET  /status` - Returns the status of the API

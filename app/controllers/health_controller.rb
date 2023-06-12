@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-class HealthController < ApplicationController
+class HealthController < ActionController::API
 
   # GET /health
   # GET /health.json
