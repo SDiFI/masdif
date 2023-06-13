@@ -74,6 +74,7 @@ module ConversationConcern
   def process_successful_response(responses)
     if responses&.size&.positive?
       process_tts(responses) if @use_tts
+      process_custom_actions(responses)
       append_metadata_and_message_id(responses)
     else
       responses = empty_response_message(@language, @meta_data)
@@ -88,6 +89,30 @@ module ConversationConcern
 
     @message.reply = json_reply
     json_reply
+  end
+
+  # Process custom actions from the dialog system.
+  # If a key value 'custom' is present inside the responses array, the value of that
+  # key is an action reply containing JSON. Save the action reply to the message and
+  # remove the custom element from the reply attribute.
+  # @param [Array, nil] responses  response from the dialog system, already parsed from json
+  # @return [void]
+  def process_custom_actions(responses)
+    indices_to_delete = []
+    responses&.each_with_index do |m, index|
+      if m.has_key?('custom')
+        # we symbolize the keys for easier conversion from mixed case to snake case
+        # but these keys are again converted to normal strings when saved to the database
+        val = JSON.parse(m['custom'], symbolize_names: true)
+        transformed_val = val.deep_transform_keys { |key| key.to_s.underscore }
+        @message.update(action_reply: transformed_val)
+        # record the index to delete later
+        indices_to_delete << index
+      end
+    end
+
+    # remove the custom reply from the reply attribute
+    indices_to_delete.reverse_each { |index| responses&.delete_at(index) }
   end
 
   # Processes TTS for the response from the dialog system.

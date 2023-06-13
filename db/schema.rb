@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.0].define(version: 2023_06_11_105737) do
+ActiveRecord::Schema[7.0].define(version: 2023_06_12_231731) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pgcrypto"
   enable_extension "plpgsql"
@@ -72,6 +72,7 @@ ActiveRecord::Schema[7.0].define(version: 2023_06_11_105737) do
     t.jsonb "reply"
     t.string "tts_result", default: "none"
     t.string "feedback", default: "none"
+    t.jsonb "action_reply"
     t.index ["conversation_id"], name: "index_messages_on_conversation_id"
   end
 
