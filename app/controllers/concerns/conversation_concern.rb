@@ -48,15 +48,95 @@ module ConversationConcern
     rasa.rest_msg(@conversation.id.to_s, message_text, @meta_data)
   end
 
+  # Fetches the tracker from the dialog system, that belongs to the current conversation.
+  # Returns an empty hash if the request fails.
+  # @return [Hash] the latest message from the dialog system
+  def get_tracker
+    rasa = RasaHttp.new(RASA_HTTP_SERVER, RASA_HTTP_PORT, RASA_HTTP_PATH, RASA_HTTP_TOKEN)
+    tracker_response = rasa.get_tracker(@conversation.id.to_s)
+    if tracker_response.status != 200
+      Rails.logger.error "Error getting tracker: #{tracker_response.body}"
+      return {}
+    end
+    tracker_response.body
+  end
+
+  # Filter events by timestamp
+  #
+  # @param data [Hash] the tracker data
+  # @param timestamp [Time] the timestamp to filter by
+  # @return [Array] the filtered events
+  def filter_events_by_timestamp(data, timestamp)
+    return [] unless data.is_a?(Hash) && data['events'].is_a?(Array)
+
+    data['events'].select do |event|
+      event_timestamp = event['timestamp']
+      event_time = Time.at(event_timestamp)
+      event_time > timestamp
+    end
+  end
+
+  # Filter given keys from a hash or an array of hashes recursively
+  # @param input [Hash, Array] the input to be filtered
+  # @param keys_to_filter [Array] the keys to be filtered
+  # @return [Hash, Array] the filtered input
+  def filter_keys(input, keys_to_filter)
+    # If the input is an array, process each element recursively
+    if input.is_a?(Array)
+      return input.map { |item| filter_keys(item, keys_to_filter) }
+    end
+
+    # Base case: return the input if it's not a Hash
+    return input unless input.is_a?(Hash)
+
+    # Recursively process the hash
+    filtered_hash = {}
+    input.each do |key, value|
+      # Check if the key is in the array of keys to be filtered
+      next if keys_to_filter.include?(key)
+
+      # If it's not, check if the value is a Hash or an Array and process it recursively
+      if value.is_a?(Hash) || value.is_a?(Array)
+        filtered_hash[key] = filter_keys(value, keys_to_filter)
+      else
+        filtered_hash[key] = value
+      end
+    end
+
+    filtered_hash
+  end
+
+  # Processes the tracker from the dialog system.
+  # If the tracker is not empty, the latest message and events are extracted and saved to the message.
+  # Also these are filtered to remove unnecessary data.
+  #
+  # @param message [Message] the message to be updated
+  # @param time_started [Time] the time when the request was sent to the dialog system
+  # @param start_timestamp [Time] the timestamp of the latest event in the tracker
+  # @return [void]
+  def process_tracker(message, time_started, start_timestamp)
+    tracker = get_tracker
+    if tracker
+      latest_message = tracker['latest_message']
+      message.nlu = filter_keys(latest_message, %w[metadata message_id])
+      events = filter_events_by_timestamp(tracker, start_timestamp)
+      message.events = filter_keys(events, %w[parse_data metadata custom message_id timestamp])
+      message.time_dialog = Time.now - time_started
+    end
+  end
+
   # Processes the response from the dialog system.
   #
   # If the response is successful, the response is processed and the message is updated with the response.
   # If the response is not successful, the message is updated with the error message.
   #
   # @param http_response [Faraday::Response]  response from the dialog system, already parsed from json
+  # @param time_started [Time] the time when the request was sent to the dialog system
+  # @param latest_event_timestamp [Time] the timestamp of the latest event in the tracker
   # @return [void]
-  def process_response(http_response)
+  def process_response(http_response, time_started, latest_event_timestamp)
     if http_response.status == 200
+      process_tracker(@message, time_started, latest_event_timestamp)
       render json: process_successful_response(http_response.body)
     else
       @message.update!(reply: http_response.reason_phrase)
@@ -73,7 +153,9 @@ module ConversationConcern
   # @return [String] the json reply
   def process_successful_response(responses)
     if responses&.size&.positive?
+      start_time = Time.now
       process_tts(responses) if @use_tts
+      @message.time_tts = Time.now - start_time
       process_custom_actions(responses)
       append_metadata_and_message_id(responses)
     else
