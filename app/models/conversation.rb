@@ -1,6 +1,8 @@
 class Conversation < ApplicationRecord
   has_many :messages, dependent: :destroy
 
+  include TimeScopes
+
   # Returns the message as a JSON object, but deletes the id field and replaces it with conversation_id
   #
   # @return [Hash] the message as a JSON object

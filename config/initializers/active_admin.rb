@@ -124,7 +124,7 @@ ActiveAdmin.setup do |config|
   # This allows your users to comment on any resource registered with Active Admin.
   #
   # You can completely disable comments:
-  # config.comments = false
+  config.comments = false
   #
   # You can change the name under which comments are registered:
   # config.comments_registration_name = 'AdminComment'
@@ -215,6 +215,8 @@ ActiveAdmin.setup do |config|
   #
   # To load a javascript file:
   #   config.register_javascript 'my_javascript.js'
+  config.register_javascript "https://cdn.jsdelivr.net/npm/apexcharts"
+  config.register_javascript "admin/custom.js"
 
   # == CSV options
   #
@@ -271,7 +273,7 @@ ActiveAdmin.setup do |config|
   # Pagination is enabled by default for all resources.
   # You can control the default per page count for all resources here.
   #
-  # config.default_per_page = 30
+  config.default_per_page = [15, 30, 50, 100]
   #
   # You can control the max per page count too.
   #
@@ -317,7 +319,7 @@ ActiveAdmin.setup do |config|
   # By default, the footer shows the current Active Admin version. You can
   # override the content of the footer here.
   #
-  # config.footer = 'my custom footer text'
+  config.footer = 'Powered by MASDIF Admin'
 
   # == Sorting
   #
@@ -333,3 +335,11 @@ ActiveAdmin.setup do |config|
   #
   # config.use_webpacker = true
 end
+
+Rails.application.config.to_prepare do
+  ActiveAdmin::BaseController.send(:include, ActiveAdmin::FiltersPersistence)
+  ActiveAdmin::BaseController.send(:include, ActiveAdmin::ScopesPersistence)
+  ActiveAdmin::BaseController.send(:include, ActiveAdmin::TimeRangesPersistence)
+  ActiveAdmin::BaseController.send(:include, ActiveAdmin::PaginationPersistence)
+end
+

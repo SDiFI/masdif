@@ -15,3 +15,35 @@
 // For example, to change the default status-tag color:
 //
 //   .status_tag { background: #6090DB; }
+
+.navigation-buttons .panel_contents > div {
+  display: flex;
+  justify-content: space-between;
+}
+
+.button.disabled {
+  opacity: 0.5;
+  pointer-events: none;
+}
+
+form {
+  text-align: left;
+}
+
+// For intent and entity columns in Dashboard
+.intent-entities-columns > .column {
+  box-sizing: border-box;
+  float: left; // Float not flex
+  width: 33%; // 33% width
+  text-align: left;
+}
+
+#header{
+    background-color: #2c3e50;
+    color: #fff;
+    font-size: 1.5em;
+    font-weight: 300;
+    padding: 0.5em 1em;
+    text-align: center;
+    text-transform: uppercase;
+}

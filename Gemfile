@@ -87,8 +87,10 @@ gem "sidekiq"
 gem 'activeadmin'
 
 # Plus integrations with:
+gem 'color'
 gem 'devise'
 gem 'cancancan'
 gem 'draper'
 gem 'pundit'
-gem 'chartkick'
+gem 'apexcharts'
+gem 'groupdate'
