@@ -134,19 +134,25 @@ class Message < ApplicationRecord
   #                and the following values:
   #                 Hash with the intent/entity/action name as value for key :name and the count as value for key :data
   def self.stats_counts(scope = 'all')
-    # verify that the scope is valid
-    allowed_scopes = [:today, :this_week, :this_month, :this_year, :all]
-    scope = :all unless allowed_scopes.include?(scope.to_sym)
-
+    scope = verify_scope(scope)
     messages = self.send(scope.to_sym)
+
     intents_count = Hash.new(0)
     entities_count = Hash.new(0)
     actions_count = Hash.new(0)
+    tts_count = 0
+    asr_count = 0
 
     i_cnt = 0
     e_cnt = 0
     a_cnt = 0
-    messages.pluck(:nlu, :events).each do |nlu, event|
+    messages.pluck(:nlu, :events, :tts_result, :meta_data).each do |nlu, event, tts_result, meta_data|
+      if meta_data
+        asr_count += 1 if meta_data['asr_generated'] == true
+      end
+      if tts_result
+        tts_count += 1 if tts_result == 'success'
+      end
       if event
         event.each do |e|
           next unless e['event'] == 'action'
@@ -170,10 +176,73 @@ class Message < ApplicationRecord
       intents_count: intents_count.map { |intent, count| { name: intent, data: count } },
       entities_count: entities_count.map { |entity, count| { name: entity, data: count } },
       actions_count: actions_count.map { |action, count| { name: action, data: count } },
+      tts_count: tts_count,
+      asr_count: asr_count,
       intents_percentage: intents_count.transform_values { |v| (v.to_f / i_cnt * 100).round(2) }.map { |intent, count| { name: intent, data: count } },
       entities_percentage: entities_count.transform_values { |v| (v.to_f / e_cnt * 100).round(2) }.map { |entity, count| { name: entity, data: count } },
       actions_percentage: actions_count.transform_values { |v| (v.to_f / a_cnt * 100).round(2) }.map { |action, count| { name: action, data: count } }
     }
   end
 
+  # Counts the number of messages that have been voted on via user feedback and returns the count as a Hash
+  #
+  # @param scope [String] the scope to use for the query
+  # @return [Hash] the count as a Hash with the feedback values as keys and the counts as values
+  def self.feedback_counts(scope = 'all')
+    scope = verify_scope(scope)
+
+    # exclude messages that start with '/'
+    messages = self.send(scope.to_sym).where("text NOT LIKE ?", '/%')
+
+    # Get feedback counts
+    feedback_counts = messages.group(:feedback).count
+
+    # Add overall count to the hash
+    feedback_counts['overall'] = messages.count
+
+    # Return the hash
+    feedback_counts
+  end
+
+  # Groups the messages by feedback value and returns the counts as an Array of Hashes
+  # grouped by the specified period compatible with the groupdate gem
+  #
+  # @param scope [String] the scope to use for the query
+  # @param period [String] the period to group by
+  # @return [Array of Hashes] the counts as an Array of Hashes with the feedback values as keys and the counts as values
+  def self.feedback_date_series(scope = 'all', period = 'day')
+    scope = verify_scope(scope)
+
+    # Translate period argument to groupdate function
+    period = case period
+             when 'hour', 'day', 'month', 'year'
+               period.to_sym
+             else
+               raise ArgumentError, "Invalid period argument: #{period}"
+             end
+
+    # exclude messages that start with '/'
+    messages = self.send(scope.to_sym).where("text NOT LIKE ?", '/%')
+
+    # Initialize an empty hash
+    series_data = Hash.new { |hash, key| hash[key] = {} }
+
+    # Get feedback counts grouped by the specified period
+    messages.group(:feedback).group_by_period(period, :created_at, format: "%a, %d %b %Y").count.each do |(feedback, date), count|
+      series_data[feedback][date] = count unless feedback == 'none'
+    end
+
+    # Convert series_data hash into an array of hashes
+    series_data.map do |feedback, data|
+      {name: feedback, data: data}
+    end
+  end
+
+  private
+
+  def self.verify_scope(scope)
+    allowed_scopes = [:today, :this_week, :this_month, :last_30_days, :this_year, :all]
+    scope = :all unless allowed_scopes.include?(scope.to_sym)
+    scope
+  end
 end

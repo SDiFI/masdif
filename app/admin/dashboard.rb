@@ -20,6 +20,52 @@ ActiveAdmin.register_page "Dashboard" do
     end
 
     counts = Message.stats_counts(time_range)
+    feedback_counts = Message.feedback_counts(time_range)
+
+    panel "Stats" do
+      columns do
+        column do
+          if feedback_counts.empty?
+            h3 "No data"
+          else
+            m_stats = {Overall: feedback_counts['overall'], ASR: counts[:asr_count], TTS: counts[:tts_count]}
+            table class: 'index_table' do
+              tr do
+                th 'Messages'
+                th 'Count'
+              end
+              m_stats.each do |message, count|
+                tr do
+                  td message
+                  td count
+                end
+              end
+            end
+          end
+        end
+
+        column do
+          if feedback_counts.empty? && !feedback_counts.present?
+            h3 "No data"
+            next
+          else
+            table class: 'index_table' do
+              tr do
+                th 'Feedback'
+                th 'Count'
+              end
+              feedback_counts.each do |feedback, count|
+                next if feedback == 'overall'
+                tr do
+                  td feedback
+                  td count
+                end
+              end
+            end
+          end
+        end
+      end
+    end
 
     columns class: 'intent-entities-columns' do
       column do
@@ -59,30 +105,34 @@ ActiveAdmin.register_page "Dashboard" do
     columns do
       column do
         panel "Activity" do
-          total =
-            case time_range
-            when 'all'
-              Message.group_by_week(:created_at).count
-            when 'today'
-              Message.send(:today).group_by_hour(:created_at).count
-            when 'this_week'
-              Message.send(:this_week).group_by_day(:created_at).count
-            when 'this_month'
-              Message.send(:this_month).group_by_day(:created_at).count
-            when 'this_year'
-              Message.send(:this_year).group_by_day(:created_at).count
-            when 'last_30_days'
-              Message.send(:last_30_days).group_by_day(:created_at).count
-            else
-              {}
-            end
+          grouping = case time_range
+                     when 'today'
+                       {method: :group_by_hour, params: [:created_at]}
+                     else
+                       {method: :group_by_day, params: [:created_at]}
+                     end
+          total = Message.send(time_range).where("text NOT LIKE ?", '/%').send(grouping[:method], *grouping[:params]).count
+
           if total.empty?
             h3 "No data"
           else
-            total_series = {
-              name: "Total", data: total
-            }
-            area_chart(total_series, theme: 'palette2')
+            case grouping[:method]
+            when :group_by_hour
+              period = 'hour'
+            else
+              period = 'day'
+            end
+            fb_series = Message.feedback_date_series(time_range, period)
+            total_series = { name: "Total", data: total }
+
+            # Define the series order & sort fb_series by name
+            fb_series.sort_by! { |series| %w[positive negative].index(series[:name]) || Float::INFINITY }
+
+            # Colors order is important and needs to match fb_series order as we want to show positive as green, negative
+            # as red and Total in a nice palette color !
+            colors = %w[green red #008FFB] # colors for positive, negative and total
+            chart_options = { colors: colors, stacked: false, data_labels: false }
+            render partial: 'activity_chart', locals: { fb_series: fb_series, total_series: total_series, options: chart_options }
           end
         end
       end
