@@ -24,22 +24,19 @@ build of Github, if a new tag is pushed to this repository.
 Masdif provides a REST API for the frontend. We provide a web widget that is served by Masdif itself but can also be
 easily integrated into a web page. The widget source code can be found [here](https://github.com/SDiFI/webchat).
 
-The following API endpoints are provided:
+The following endpoints are provided:
 
 - `GET  /` - Serves the chat widget (path configurable)
-- `GET  /conversations` - Returns a list of all conversations
-- `GET  /conversations/:id` - Returns history for a single conversation
+- `GET  /admin` - Administration web application for managing conversations (path configurable via namespace setting of
+                  ActiveAdmin)
 - `POST /conversations/` - Creates a new conversation, returns JSON with the conversation id
 - `PATCH/PUT /conversations/:id` - Appends message to conversation with given id, receives bot response as JSON
-- `DELETE /conversations/:id` - Deletes conversation with given id, TODO: needs to be protected
 - `GET /health` - Returns the health status of the API
 - `GET /info` - Returns information about the bot. This is typically the first request sent by the client and is
    used to initialize the chat widget with e.g. the motd and supported languages.
-- `GET  /status` - Returns the status of the API
 
 The following API endpoints are planned for future versions:
 
-- `GET  /admin` - web application for managing conversations
 - `GET  /api` - shows the OpenAPI documentation
 - `POST /conversations/:id/audio` - Appends audio recording to conversation with given id, i.e. synchronous ASR
 - `GET  /version` - Returns the version of the Manager

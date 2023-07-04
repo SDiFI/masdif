@@ -16,7 +16,7 @@ Rails.application.routes.draw do
     end
   end
 
-  resources :conversations
+  resources :conversations, only: [:create, :update]
 
   get '/info', to: 'info#index'
 
