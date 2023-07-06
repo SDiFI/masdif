@@ -4,7 +4,7 @@ class ChangeReplyToJsonbInMessages < ActiveRecord::Migration[7.0]
       Message.find_each do |message|
         begin
           if message.reply.present?
-            json_string = message.reply.gsub('\\"', '"').gsub('\\\\', '\\')
+            json_string = JSON.generate(message.reply)
             message.update_column(:reply, JSON.parse(json_string))
           end
         rescue JSON::ParserError => e
