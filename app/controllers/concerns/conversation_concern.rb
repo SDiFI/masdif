@@ -169,7 +169,7 @@ module ConversationConcern
       json_reply = empty_response_message(@language, @meta_data).to_json
     end
 
-    @message.reply = json_reply
+    @message.reply = responses
     json_reply
   end
 
@@ -244,7 +244,7 @@ module ConversationConcern
   def empty_response_message(language, meta_data)
     [
       {
-        metadata: meta_data.merge(language: language),
+        metadata: meta_data.merge(language: language, asr_generated: false, tts: false),
         message_id: @message.id.to_s,
         recipient_id: @conversation.id.to_s
       }

@@ -14,17 +14,11 @@ class Message < ApplicationRecord
   # @return [String] the bot reply
   def reply_text
     return nil if self.reply.nil?
-    begin
-      reply = JSON.parse(self.reply)
-      if reply.is_a?(Array)
-        reply.collect { |r| r['text'] }.join(". ")
-      else
-        reply['text']
-      end
-    rescue JSON::ParserError => e
-      return self.reply
-    rescue StandardError => e
-      return self.reply
+    reply = self.reply
+    if reply.is_a?(Array)
+      reply.collect { |r| r['text'] }.join(". ")
+    else
+      reply['text']
     end
   end
 
@@ -89,7 +83,7 @@ class Message < ApplicationRecord
   def slots
     return [] if self.events.nil?
     self.events.select { |e| e['event'] == 'slot' }.map do |slot|
-      next if slot['name'] == 'session_started_metadata'
+      next if slot['name'].nil? || slot['name'] == 'session_started_metadata' || slot['value'].nil?
       slot['value'] + ' ('+ slot['name'] + ')'
     end.uniq
   end
