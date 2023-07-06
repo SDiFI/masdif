@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.0].define(version: 2023_07_05_170030) do
+ActiveRecord::Schema[7.0].define(version: 2023_07_06_230155) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pgcrypto"
   enable_extension "plpgsql"
@@ -68,13 +68,13 @@ ActiveRecord::Schema[7.0].define(version: 2023_07_05_170030) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.string "text"
-    t.jsonb "meta_data"
-    t.jsonb "reply"
+    t.jsonb "meta_data", default: {}, null: false
+    t.jsonb "reply", default: {}, null: false
     t.string "tts_result", default: "none"
     t.string "feedback", default: "none"
-    t.jsonb "action_reply"
-    t.jsonb "nlu"
-    t.jsonb "events"
+    t.jsonb "action_reply", default: {}, null: false
+    t.jsonb "nlu", default: {}, null: false
+    t.jsonb "events", default: {}, null: false
     t.float "time_dialog"
     t.float "time_tts"
     t.float "time_overall"
