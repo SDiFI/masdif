@@ -23,25 +23,26 @@ ActiveAdmin.register Message do
 
   actions :all, :except => [:new, :create, :edit, :destroy]
 
-  # Filter settings, preserve defaults and remove the ones we don't want
-  preserve_default_filters!
-  remove_filter :id, :updated_at, :meta_data, :conversation, :tts_result,
-                :asr_audio_attachment, :tts_audio_attachments, :asr_audio_blob, :tts_audio_blobs
-  filter :feedback, as: :select, collection: -> { %w[positive negative none] }
+  filter :text, as: :string, label: 'User text'
+  filter :bot_answer, as: :string, label: 'Bot answer'
+  filter :feedback, as: :check_boxes, collection: -> { %w[positive negative none] }
+  filter :intent, as: :select, collection: -> { Message.intent_list }
+  filter :asr_generated, as: :boolean, label: 'ASR used ?'
+  filter :created_at
+  filter :verbosity, as: :select, collection: {'User' => 'user', 'Internal' => 'internal'}, label: 'Message type'
 
   # Customize index view
-  index do
-    selectable_column
-    column 'User' do |m|
+  index row_class: ->elem { highlight_feedback(elem) } do
+    column 'User text' do |m|
       link_to m.text, admin_message_path(m, scope: params[:scope])
     end
-    column 'Bot', :reply_text
-    column :feedback
+    column 'Bot answer', :reply_text
+    column 'User Feedback', :feedback, class: 'col-user_feedback'
     column 'Intent', :intent
     column 'Entities', :entities
     column 'Slots', :slots
     column 'Actions', :actions
-    column 'Audio' do |m|
+    column 'Voice Audio' do |m|
       audio_urls = m.audio_urls
       if audio_urls.nil? || audio_urls.empty?
         'N/A'
@@ -51,5 +52,18 @@ ActiveAdmin.register Message do
     end
   end
 
+end
 
+# Return the CSS row_class to highlight the feedback
+#
+# @param [Message] elem the message
+# @return [String] the CSS class
+def highlight_feedback(elem)
+  if elem.feedback == 'positive'
+    'highlight-positive'
+  elsif elem.feedback == 'negative'
+    'highlight-negative'
+  else elem.feedback == 'none'
+    'highlight-none'
+  end
 end

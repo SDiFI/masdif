@@ -47,3 +47,15 @@ form {
     text-align: center;
     text-transform: uppercase;
 }
+
+body.active_admin {
+  .index_table {
+    tr.highlight-negative td.col-user_feedback {
+      background-color: lighten(pink, 5%);
+    }
+
+    tr.highlight-positive td.col-user_feedback {
+      background-color: lighten(lightgreen, 5%);
+    }
+  }
+}

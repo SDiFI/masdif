@@ -10,6 +10,35 @@ class Message < ApplicationRecord
 
   include TimeScopes
 
+  scope :with_response, -> { where.not(reply: {}) }
+  scope :with_intent, -> { where.not(nlu: {}) }
+  scope :with_entities, -> { where.not(nlu: {}) }
+  scope :exclude_internal, -> { where.not("text LIKE '/%'") }
+
+  # For intent filtering, creates a list of all intents in the database
+  scope :intent_list, -> { with_intent.pluck(:nlu).map do |nlu|
+                              next if nlu.dig('intent', 'name').nil?
+                              nlu['intent']['name']
+                            end.uniq.sort }
+
+  # to be able to use :intent as filter argument and matching the name of the filtered intent
+  ransacker :intent do |parent|
+    op = Arel::Nodes::InfixOperation.new('->>', Arel::Nodes.build_quoted("intent"), Arel::Nodes.build_quoted("name"))
+    Arel::Nodes::InfixOperation.new('->', parent.table[:nlu], op)
+  end
+
+  ransacker :bot_answer do
+    Arel.sql("(reply #>> '{0,text}')")
+  end
+
+  ransacker :asr_generated do |parent|
+    Arel::Nodes::InfixOperation.new('->>', parent.table[:meta_data], Arel::Nodes.build_quoted('asr_generated'))
+  end
+
+  ransacker :verbosity do
+    Arel.sql("(CASE WHEN text LIKE '/%' THEN 'internal' ELSE 'user' END)")
+  end
+
   # Returns the bot reply as a String
   # @return [String] the bot reply
   def reply_text
@@ -21,7 +50,6 @@ class Message < ApplicationRecord
       reply['text']
     end
   end
-
 
   # Returns the TTS result as an array of audio URLs
   # @return [Array] the TTS result audio URLs
