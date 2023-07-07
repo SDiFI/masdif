@@ -21,17 +21,45 @@ ActiveAdmin.register Conversation do
 
   actions :all, :except => [:new, :create, :edit]
 
-  preserve_default_filters!
-  remove_filter :updated_at
+  filter :messages_text_cont, as: :string, label: 'User text'
+  filter :messages_bot_answer_cont, as: :string, label: 'Bot answer'
+  filter :messages_feedback, as: :check_boxes, label: 'Feedback', collection: -> { %w[positive negative none] }
+  filter :messages_intent_in, as: :select, collection: -> { Message.intent_list }, label: 'Intent'
+  filter :messages_asr_generated_eq, as: :boolean, label: 'ASR used ?'
+  filter :created_at
+
+  controller do
+    def scoped_collection
+      # we need to use distinct here, otherwise we get duplicate results for multiple messages in a conversation
+      end_of_association_chain.distinct
+    end
+  end
 
   index do
     selectable_column
-    column :id do |conversation|
-      link_to conversation.id, admin_conversation_path(conversation, scope: params[:scope])
+    column :messages do |conversation|
+      message_texts = conversation.messages.exclude_internal.order(:created_at).map(&:text)
+      excerpt_text = message_texts.join(" => ").truncate(100)
+      link_to excerpt_text, admin_conversation_path(conversation)
+    end
+    column :feedback do |conversation|
+      feedback_counts = Message.feedback_of_conversation(conversation.id)
+      feedback_values = [feedback_counts['positive'] || 0, feedback_counts['negative'] || 0]
+      colors = %w[#00FF00 #FF0000] # Green for positive, red for negative
+      # Only create a chart if there are positive or negative feedbacks
+      if feedback_values.sum > 0
+        pie_chart(feedback_values,
+                  legend: false,
+                  colors: colors,
+                  width: "80px",
+                  height: "80px",
+                  chart: { animations: { enabled: false } })
+      else
+        'N/A' # Display 'N/A' if there are no feedbacks or all feedbacks are 'none'
+      end
     end
     column :created_at
-    column :updated_at
-    column :status
+    column "Updated At", :last_message_updated_at
 
     actions defaults: false do |conversation|
       item "Delete", admin_conversation_path(conversation), method: :delete, data: { confirm: "Are you sure you want to delete this?" }

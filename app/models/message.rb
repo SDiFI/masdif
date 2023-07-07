@@ -8,6 +8,8 @@ class Message < ApplicationRecord
   # tts audio file(s) as returned from the TTS service
   has_many_attached :tts_audio
 
+  after_save :update_conversation
+
   include TimeScopes
 
   scope :with_response, -> { where.not(reply: {}) }
@@ -136,6 +138,7 @@ class Message < ApplicationRecord
           return 'invalid'
         else
           value = feedback['value']
+          # sometimes the client sends the value with leading and trailing single quotes, remove them
           return value.delete_prefix("'").delete_suffix("'")
         end
       rescue JSON::ParserError => e
@@ -209,12 +212,28 @@ class Message < ApplicationRecord
   # Counts the number of messages that have been voted on via user feedback and returns the count as a Hash
   #
   # @param scope [String] the scope to use for the query
-  # @return [Hash] the count as a Hash with the feedback values as keys and the counts as values
+  # @return [Hash] the count as a Hash with the feedback values as keys and the counts as values, as well as an 'overall' key
   def self.feedback_counts(scope = 'all')
     scope = verify_scope(scope)
 
-    # exclude messages that start with '/'
-    messages = self.send(scope.to_sym).where("text NOT LIKE ?", '/%')
+    messages = self.send(scope.to_sym).exclude_internal
+
+    # Get feedback counts
+    feedback_counts = messages.group(:feedback).count
+
+    # Add overall count to the hash
+    feedback_counts['overall'] = messages.count
+
+    # Return the hash
+    feedback_counts
+  end
+
+  # Returns the feedback counts for a specific conversation as a Hash
+  #
+  # @param conversation_id [String] the conversation id
+  # @return [Hash] the count as a Hash with the feedback values as keys and the counts as values, as well as an 'overall' key
+  def self.feedback_of_conversation(conversation_id)
+    messages = self.where(conversation_id: conversation_id).exclude_internal
 
     # Get feedback counts
     feedback_counts = messages.group(:feedback).count
@@ -271,9 +290,15 @@ class Message < ApplicationRecord
 
   private
 
+  # Update the conversation's last_message_updated_at attribute
+  def update_conversation
+    conversation.update(last_message_updated_at: self.updated_at)
+  end
+
   def self.verify_scope(scope)
     allowed_scopes = [:today, :this_week, :this_month, :last_30_days, :this_year, :all]
     scope = :all unless allowed_scopes.include?(scope.to_sym)
     scope
   end
+
 end
