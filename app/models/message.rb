@@ -243,15 +243,24 @@ class Message < ApplicationRecord
                raise ArgumentError, "Invalid period argument: #{period}"
              end
 
-    # exclude messages that start with '/'
-    messages = self.send(scope.to_sym).where("text NOT LIKE ?", '/%')
+    messages = self.send(scope.to_sym).exclude_internal
 
-    # Initialize an empty hash
-    series_data = Hash.new { |hash, key| hash[key] = {} }
-
+    # Initialize an empty hash with mandatory feedback types, 'none' is not included
+    feedback_types = %w[negative positive]
+    series_data = feedback_types.map { |feedback| [feedback, {}] }.to_h
     # Get feedback counts grouped by the specified period
     messages.group(:feedback).group_by_period(period, :created_at, format: "%a, %d %b %Y").count.each do |(feedback, date), count|
       series_data[feedback][date] = count unless feedback == 'none'
+    end
+
+    # Collect all unique dates
+    all_dates = series_data.values.flat_map(&:keys).uniq
+
+    # Make sure every feedback type has a data point for every date
+    series_data.each do |feedback, data|
+      all_dates.each do |date|
+        data[date] ||= 0
+      end
     end
 
     # Convert series_data hash into an array of hashes
