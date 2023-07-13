@@ -1,4 +1,4 @@
-class InfoController < ApplicationController
+class InfoController < ActionController::API
   before_action :transform_params
   before_action :set_conversation, only: %i[ index ]
   before_action :set_config, only: %i[ index ]

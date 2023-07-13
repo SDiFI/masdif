@@ -23,5 +23,7 @@ module Masdif
       # Use UUIDs as primary keys
       g.orm :active_record, primary_key_type: :uuid
     end
+
+    config.autoload_paths << Rails.root.join('app/admin')
   end
 end

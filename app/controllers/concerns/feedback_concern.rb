@@ -8,7 +8,7 @@ module FeedbackConcern
     # Sets @feedback object if provided in the request parameters.
     # In case the provided feedback parameters are invalid, @feedback_error is set to true.
     def set_feedback
-      feedback_value = Message.parse_feedback(conversation_params[:text]&.to_s)
+      feedback_value = Message.parse_feedback(conversation_params[:text])
       message_id = conversation_params[:message_id]
       if feedback_value
         if update_feedback(feedback_value, message_id.to_s)

@@ -71,13 +71,6 @@ class ConversationsControllerTest < ActionDispatch::IntegrationTest
     end
   end
 
-  test 'should get index' do
-    get conversations_url, as: :json
-    json_response = JSON.parse(response.body)
-    assert json_response.size > 0
-    assert_response :success
-  end
-
   # Tests returning of a new conversation id
   test 'should create conversation' do
     assert_difference('Conversation.count') do
@@ -86,22 +79,6 @@ class ConversationsControllerTest < ActionDispatch::IntegrationTest
       assert_not_nil json_response['conversation_id']
     end
     assert_response :ok
-  end
-
-  test 'should show conversation' do
-    # first, create a new conversation
-    post conversations_url, params: { }, as: :json
-    json_response = JSON.parse(response.body)
-    conversation = Conversation.new(id: json_response['conversation_id'])
-    patch conversation_url(conversation), params: { text: @msg_hi.text }, as: :json
-
-    # now see if we can get some messages
-    get conversation_url(@conversation), as: :json
-    assert_response :success
-    messages_response = response.parsed_body
-    assert messages_response.key?('conversation_id')
-    assert messages_response.key?('messages')
-    assert messages_response['messages'].size > 0
   end
 
   # Send a message to the bot, create a new conversation beforehand
@@ -115,13 +92,6 @@ class ConversationsControllerTest < ActionDispatch::IntegrationTest
     check_bot_response(conversation.id, json_response)
     check_tts_attachment(json_response)
     check_meta_data(json_response, @msg_hi.meta_data.merge({ 'language' => 'is-IS' }))
-  end
-
-  test 'should destroy conversation' do
-    assert_difference('Conversation.count', -1) do
-      delete conversation_url(@conversation), as: :json
-    end
-    assert_response :success
   end
 
   # This test assures that we have a complete conversation flow and that the bot doesn't

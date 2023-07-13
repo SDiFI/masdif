@@ -80,19 +80,33 @@ class RasaHttp
 
   # Adds a message to a tracker. This doesn't trigger the prediction loop. It will log the message on the tracker and
   # return, no actions will be predicted or run. This is often used together with the predict endpoint.
+  # @param [String] conversation_id the conversation ID
+  # @param [String] message the message to add
   def add_message(conversation_id, message)
-    @conn.post(build_path("/conversations/#{conversation_id}/messages"), { token: @token, message: message })
+    # TODO: we can provide the following keys to this endpoint: text, sender, parse_data, include_events, sender needs
+    # to be "user"
+    @conn.post(build_path("/conversations/#{conversation_id}/messages"), { token: @token, text: message })
   end
 
   # Appends one or multiple new events to the tracker state of the conversation. Any existing events will be kept
   # and the new events will be appended, updating the existing state. If events are appended to a new conversation ID,
   # the tracker will be initialised with a new session.
-  def add_event(conversation_id, event, text, metadata = DEFAULT_METADATA)
+  # @param [String] conversation_id the conversation ID
+  # @param [String] message_id the message ID
+  # @param [String] event the event type (currently supported: user, restart)
+  # @param [String] text the text of the event
+  # @param [Hash] metadata the metadata of the event
+  # @param [Hash] parse_data the parse data of the event, as previously returned by the parse endpoint
+  def add_event(conversation_id, message_id, event, text, metadata = DEFAULT_METADATA, parse_data = nil)
     @conn.post build_path("/conversations/#{conversation_id}/tracker/events") do |req|
       req.params[:token] = @token
       case event
       when 'user'
-        req.body = JSON.generate(sender: conversation_id, event: event, text: text, metadata: metadata)
+        h = {sender: conversation_id, message_id: message_id, event: event, text: text, metadata: metadata}
+        if parse_data
+          h.merge!(parse_data: parse_data)
+        end
+        req.body = JSON.generate(h)
       when 'restart'
         # metadata must not be empty if set
         req.body = JSON.generate(sender: conversation_id, event: event, metadata: metadata)

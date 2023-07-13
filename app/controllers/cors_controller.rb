@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-class CorsController < ApplicationController
+class CorsController < ActionController::API
   def options
     render plain: ''
   end
