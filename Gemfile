@@ -54,6 +54,7 @@ gem "sassc-rails"
 
 gem 'faraday', '~> 2.7.4'
 gem 'awesome_print'
+gem 'rugged', '~> 1.6.3'
 
 group :development, :test do
   # See https://guides.rubyonrails.org/debugging_rails_applications.html#debugging-with-the-debug-gem

@@ -1,7 +1,7 @@
 FROM ruby:3.2.2-slim-bullseye
 
 RUN apt-get update -qq && apt-get install -y build-essential libpq-dev ssh sox curl software-properties-common
-RUN apt-get install -y git zlib1g-dev liblzma-dev patch pkg-config libxml2-dev libxslt-dev ffmpeg vim
+RUN apt-get install -y git zlib1g-dev liblzma-dev patch pkg-config libxml2-dev libxslt-dev ffmpeg vim cmake
 RUN mkdir -p ~/.ssh && ssh-keyscan -t rsa github.com >> ~/.ssh/known_hosts
 
 # Set an environment variable where the Rails app is installed to inside of Docker image
@@ -12,6 +12,16 @@ RUN mkdir -p $RAILS_ROOT/tmp/pids/
 
 # Set working directory
 WORKDIR $RAILS_ROOT
+
+# build-time variables for Git version
+ARG GIT_TAG
+ARG GIT_BRANCH
+ARG GIT_COMMIT
+
+# Convert them into environment variables
+ENV GIT_TAG=$GIT_TAG
+ENV GIT_BRANCH=$GIT_BRANCH
+ENV GIT_COMMIT=$GIT_COMMIT
 
 # Setting env up
 ENV RAILS_ENV='production'

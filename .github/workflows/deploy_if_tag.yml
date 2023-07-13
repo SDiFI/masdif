@@ -37,9 +37,13 @@ jobs:
         env:
           RAILS_CREDENTIALS: ${{ secrets.RAILS_CREDENTIALS }}
           RAILS_MASTER_KEY: ${{ secrets.RAILS_MASTER_KEY }}
+          GIT_COMMIT: ${{ github.sha }}
+          GIT_TAG: ${{ github.ref_name }}
         run: |
           ci/create_credentials.sh $RAILS_CREDENTIALS $RAILS_MASTER_KEY
           cp .env.example .env
+          echo "GIT_COMMIT=$GIT_COMMIT" >> .env
+          echo "GIT_TAG=$GIT_TAG" >> .env
           cat docker-compose.yml ${{ env.RASA_REPO_DIR }}/masdif_override_template.yml | docker-compose -f - build
       - name: Registry login
         run: echo "${{ secrets.REGISTRY_PASSWORD }}" | docker login $REGISTRY_SERVER -u "${{ secrets.REGISTRY_USERNAME }}" --password-stdin

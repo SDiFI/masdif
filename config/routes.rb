@@ -23,6 +23,9 @@ Rails.application.routes.draw do
   # defines the route for the health check
   get '/health', to: 'health#index'
 
+  # defines the route for the version
+  get '/version', to: 'version#show'
+
   # defines the route for the cors options
   match '/', to: 'cors#options', via: :options
 end

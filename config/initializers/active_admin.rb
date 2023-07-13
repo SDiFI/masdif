@@ -336,10 +336,12 @@ ActiveAdmin.setup do |config|
   # config.use_webpacker = true
 end
 
+# Persistence of filters, scopes, time ranges and pagination
 Rails.application.config.to_prepare do
   ActiveAdmin::BaseController.send(:include, ActiveAdmin::FiltersPersistence)
   ActiveAdmin::BaseController.send(:include, ActiveAdmin::ScopesPersistence)
   ActiveAdmin::BaseController.send(:include, ActiveAdmin::TimeRangesPersistence)
   ActiveAdmin::BaseController.send(:include, ActiveAdmin::PaginationPersistence)
+  ActiveAdmin::BaseController.send(:include, VersionHelper)
 end
 
