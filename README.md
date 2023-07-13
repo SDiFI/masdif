@@ -33,13 +33,13 @@ The following endpoints are provided:
 - `PATCH/PUT /conversations/:id` - Appends message to conversation with given id, receives bot response as JSON
 - `GET /health` - Returns the health status of the API
 - `GET /info` - Returns information about the bot. This is typically the first request sent by the client and is
-   used to initialize the chat widget with e.g. the motd and supported languages.
+   used to initialize the chat widget with e.g. the message of the day and supported languages.
+- `GET  /version` - Returns the version of the Manager
 
 The following API endpoints are planned for future versions:
 
 - `GET  /api` - shows the OpenAPI documentation
 - `POST /conversations/:id/audio` - Appends audio recording to conversation with given id, i.e. synchronous ASR
-- `GET  /version` - Returns the version of the Manager
 
 The client sends messages via POST requests to Masdif. The POST request blocks on completion of all involved services.
 All id's are UUID's and therefore unique. Only the client knows the conversation id, which is used to identify the
@@ -121,6 +121,21 @@ it possible to detect when a user has stopped speaking, i.e. in the presence of 
 Our web chat-bot widget provides a button to activate audio recording. As soon as the ASR service detects end of audio,
 it sends a stop response to the widget which disables the audio recording button and sends all so far recognized text
 to Masdif via a normal POST request.
+
+## Admin interface
+
+![admin interface](./doc/admin_dashboard.png)
+
+Masdif provides a basic administration app that can be used to manage the dialog framework itself and also users that
+should have access to it. It is activated via the Masdif configuration file and is reachable by default at endpoint
+`/admin`.
+
+You can review conversations, messages, listen to the generated TTS audio files and view statistics about the dialog
+framework. It's possible to search through conversations, set filters for dates, intents and entities to easily
+drill-down to relevant information. You can also delete conversations and related resources like messages and attachments.
+
+The administration app uses the [ActiveAdmin](https://activeadmin.info/) framework  and is protected by the Devise
+user authentication Gem. For further information, refer to the Masdif configuration section.
 
 # Installation
 
@@ -226,6 +241,15 @@ To build all Docker images, run the following command:
 
 ```bash
 docker-compose build
+```
+
+To provide version info for the Docker images, you need to set the environment variables `GIT_TAG`, `GIT_COMMIT` and
+optionally `GIT_BRANCH` before building the images. You can do this via:
+
+```bash
+export GIT_TAG=`git describe --tags --abbrev=0`
+export GIT_COMMIT=`git rev-parse --short HEAD`
+export GIT_BRANCH=`git rev-parse --abbrev-ref HEAD`
 ```
 
 Sometimes, there are problems with Docker build kit. If you get an error like
@@ -351,7 +375,7 @@ Other parts of the Rails application are following normal Rails conventions and 
 The Masdif configuration file contains the following sections:
 
 ## admin_interface
-We provide a simple admin interface for Masdif which is based on the [ActiveAdmin](https://activeadmin.info/) gem.
+The admin interface of Masdif is based on the [ActiveAdmin](https://activeadmin.info/) gem.
 By default, you can access it at the route `/admin`, but you can configure different routes according to your needs.
 Please consult the ActiveAdmin documentation for further information.
 
