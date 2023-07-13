@@ -377,12 +377,27 @@ The Masdif configuration file contains the following sections:
 ## admin_interface
 The admin interface of Masdif is based on the [ActiveAdmin](https://activeadmin.info/) gem.
 By default, you can access it at the route `/admin`, but you can configure different routes according to your needs.
-Please consult the ActiveAdmin documentation for further information.
+Please consult the [ActiveAdmin documentation](https://activeadmin.info/documentation.html) for further information.
 
-The initial credentials for an administrator are determined at the time you are seeding the database. For development,
-the standard password is used as provided in [seeds.rb](db/seeds.rb). For production, you need to set the environment
-variables `ADMIN_USER`, `ADMIN_PASSWORD` at database seed time. After seeding the database, you can change the
-password of the administrator via the admin interface and also add new users.
+### Credentials
+The initial credentials for an administrator are determined at the time you are seeding the database **for
+the specific Rails environment development / production**.
+
+For the development environment, the standard password is used as provided in [seeds.rb](db/seeds.rb).
+**But it is strongly advised to adapt this file and change the user / password even for development purposes!**
+
+For production, you either can provide credentials inside `config/credentials.yml.enc` via the keys `admin_user`,
+`admin_password` or via the environment variables `ADMIN_USER`, `ADMIN_PASSWORD`. These values are written to the
+database **at production db seed time!**
+
+The precedence if both means (Rails credentials / environment variables) are available is 1.) Rails credentials
+2.) environment variables.
+
+After seeding the database, you can only change the password of the administrator via the admin interface but you
+are also able to add new admin users from here.
+
+Any change to either the files [seeds.rb](db/seeds.rb) or `config/credentials.yml.enc` will not be reflected until you
+re-seed the database !
 
 ## chat_widget
 The `chat_widget` section contains options for the web chat widget. You can enable/disable the widget and change the
