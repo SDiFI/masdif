@@ -9,18 +9,27 @@
     <%= stylesheet_link_tag "application", "data-turbo-track": "reload" %>
     <style><%= yield :stylesheets %></style>
     <%= javascript_importmap_tags %>
-  </head>
-
-  <body>
     <% if defined?(@webchat_config) && @webchat_config.present? && @webchat_config[:enabled] %>
       <%= javascript_tag do %>
         window.onload = () => {
           Webchat.init("chat", {
-          serverAddress: window.location.origin
+          serverAddress: window.location.origin,
+          title: "SDiFI-Bot",
+          subtitle: "",
+          placeholder: "spurning",
+          askForFeedback: true,
+          feedbackValues: {
+          thumbDown: 'negative',
+          thumbUp: 'positive',
+          untoggle: 'none'
+          }
           });
         }
       <% end %>
     <% end %>
+  </head>
+
+  <body>
     <%= yield %>
     <div id="chat"></div>
   </body>
