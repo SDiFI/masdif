@@ -350,17 +350,29 @@ You should see a response similar to that:
 
 ### Web chat widget
 
-<div style="text-align:center">
-![webchat widget](./doc/sdifi-webchat.png)
-</div>
+<p align="center">
+  <img width="372" src="./doc/sdifi-webchat.png" alt="Webchat widget">
+</p>
 
 The [SDiFI web-chat widget](https://github.com/SDiFI/webchat) is enabled by default and is served directly at
-http://locahost:8080. It can be configured to be served at a different URL if you edit the
+`/`. It can be configured to be served at a different URL if you edit the
 [Masdif configuration file](config/masdif.yml) and change the setting `chat_widget.path` to another value.
 
 You can disable the web-chat widget by setting `chat_widget.enabled` to `false`.
 
-# Configuration
+You can style the web-chat widget and configure it dynamically by editing the file 
+[application.html.erb](app/views/layouts/application.html.erb). Note that even while the feedback values are
+configurable, Masdif expects these values for the feedback buttons:
+
+```
+feedbackValues: {
+    thumbDown: 'negative',
+    thumbUp: 'positive',
+    untoggle: 'none'
+}
+```
+
+# Masdif Configuration
 The configuration for Masdif is located at `config/masdif.yml` and contains options for the Masdif application itself.
 You can use either normal YAML format but also use ERB to embed Ruby code into the configuration file, e.g. to read
 environment variables. The configuration file is loaded by the Rails application at startup and is available via
@@ -401,7 +413,8 @@ re-seed the database !
 
 ## chat_widget
 The `chat_widget` section contains options for the web chat widget. You can enable/disable the widget and change the
-path where it is served.
+path where it is served. Other configuration options need to be provided inside the file
+[application.html.erb](app/views/layouts/application.html.erb).
 
 ## feedback
 The `feedback` section contains options for the feedback provided by the user. Feedback is stored per response
