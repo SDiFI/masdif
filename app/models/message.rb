@@ -269,7 +269,7 @@ class Message < ApplicationRecord
     series_data = feedback_types.map { |feedback| [feedback, {}] }.to_h
     # Get feedback counts grouped by the specified period
     messages.group(:feedback).group_by_period(period, :created_at, format: "%a, %d %b %Y").count.each do |(feedback, date), count|
-      series_data[feedback][date] = count unless feedback == 'none'
+      series_data[feedback][date] = count if feedback_types.include?(feedback)
     end
 
     # Collect all unique dates
