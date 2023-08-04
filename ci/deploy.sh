@@ -33,9 +33,14 @@ if [ -z "$MASTER_KEY" ]; then
     exit 1
 fi
 
+# ADMIN_USER, ADMIN_PASSWORD are set via Rails credentials
+
 # Prepare .env file on server
 cp .env.example $ENV_FILE
 echo "APPLICATION_VERSION=$TAG" >> $ENV_FILE
+echo "ADMIN_INTERFACE_ENABLED=true" >>  $ENV_FILE
+
+# These variables are set from withing the CI/CD pipeline
 echo "RAILS_MASTER_KEY=$MASTER_KEY" >> $ENV_FILE
 
 # Create directory $DEPLOY_DIR with subdirectories on remote server
@@ -59,6 +64,8 @@ scp rasa/config.yml "$USER_HOST":$DEPLOY_DIR/rasa
 scp docker-compose.yml "$USER_HOST":$DEPLOY_DIR
 scp rasa/masdif_override_template.yml "$USER_HOST":$DEPLOY_DIR/rasa
 scp $ENV_FILE "$USER_HOST":$DEPLOY_DIR/.env
+# remove the env file immediately from local build machine
+rm $ENV_FILE
 scp rasa/models/* "$USER_HOST":$DEPLOY_DIR/rasa/models
 
 # Pull all Masdif images from container registry, use the tag from the environment variable APPLICATION_VERSION

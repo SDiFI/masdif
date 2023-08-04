@@ -391,6 +391,8 @@ The admin interface of Masdif is based on the [ActiveAdmin](https://activeadmin.
 By default, you can access it at the route `/admin`, but you can configure different routes according to your needs.
 Please consult the [ActiveAdmin documentation](https://activeadmin.info/documentation.html) for further information.
 
+It's enabled if you set the environment variable `ADMIN_INTERFACE_ENABLED` to `true`. The default is `false`.
+
 ### Credentials
 The initial credentials for an administrator are determined at the time you are seeding the database **for
 the specific Rails environment development / production**.

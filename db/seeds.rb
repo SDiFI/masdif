@@ -12,8 +12,8 @@ User.create!(email: 'admin@example.com', password: 'password', password_confirma
 # For production, we want to make sure that we never create a default admin user. Therefore it needs to be explicitly
 # created via environment variables or Rails credentials.
 if Rails.env.production?
-  admin_user = Rails.credentials&.admin_user || ENV['ADMIN_USER']
-  admin_password = Rails.credentials&.admin_password || ENV['ADMIN_PASSWORD']
+  admin_user = Rails.application.credentials&.admin_user || ENV['ADMIN_USER']
+  admin_password = Rails.application.credentials&.admin_password || ENV['ADMIN_PASSWORD']
   if admin_user && admin_password
     User.create!(email: admin_user, password: admin_password, password_confirmation: admin_password)
   else
