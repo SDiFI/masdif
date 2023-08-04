@@ -3,13 +3,13 @@ run-name: ${{ github.actor }} deploys Masdif for ${{ github.ref }} on ${{ github
 env:
   APPLICATION_VERSION: ${{ github.ref_name }}
   FUSEKI_VERSION: 4.8.0
-  RASA_MODEL_VERSION: v0.1
+  RASA_MODEL_VERSION: v0.2
   POSTGRES_HOSTNAME: db
   POSTGRES_USER: postgres
   RABBITMQ_USER: user
   RAILS_SERVE_STATIC_FILES: true
   RAILS_LOG_TO_STDOUT: true
-  RASA_VERSION: 3.4.9
+  RASA_VERSION: 3.6.2
   RASA_REPO_DIR: ./rasa
   REGISTRY_SERVER: ${{ vars.REGISTRY_BASE_URL }}
   REGISTRY_URL: ${{ vars.REGISTRY_URL }}
