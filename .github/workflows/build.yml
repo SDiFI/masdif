@@ -9,7 +9,7 @@ env:
   RAILS_SERVE_STATIC_FILES: true
   RAILS_LOG_TO_STDOUT: true
   RASA_REPO_DIR: ./rasa
-  RASA_VERSION: 3.4.9
+  RASA_VERSION: 3.6.2
   REGISTRY_URL: ${{ vars.REGISTRY_URL }}
 
 # Only run if no tag is pushed

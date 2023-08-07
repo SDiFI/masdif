@@ -4,7 +4,7 @@
 
 shared:
   admin_interface:
-    enabled: false
+    enabled: <%= ENV['ADMIN_INTERFACE_ENABLED'] || false %>
     # The path to where the admin interface is served is configurable via config/initializers/active_admin.rb
     # The default path is /admin.
 
@@ -48,7 +48,7 @@ shared:
     # The TTS language
     language: is-IS
     # timeout in seconds for attachment cleanup
-    attachment_timeout: <%= ENV['TTS_ATTACHMENT_TIMEOUT'] || 5.minutes %>
+    attachment_timeout: <%= ENV['TTS_ATTACHMENT_TIMEOUT'] || 14.days %>
     # The type of TTS service to use, currently supported: "SIM"
     type: SIM
     # Settings for SIM TTS service
