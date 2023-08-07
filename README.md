@@ -407,6 +407,8 @@ database **at production db seed time!**
 The precedence if both means (Rails credentials / environment variables) are available is 1.) Rails credentials
 2.) environment variables.
 
+**Please note, that the admin user needs to be an email address!**
+
 After seeding the database, you can only change the password of the administrator via the admin interface but you
 are also able to add new admin users from here.
 
