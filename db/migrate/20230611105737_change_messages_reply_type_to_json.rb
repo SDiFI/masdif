@@ -11,7 +11,8 @@ class ChangeMessagesReplyTypeToJson < ActiveRecord::Migration[7.0]
       begin
         JSON.parse(message.reply)
       rescue JSON::ParserError => e
-        message.update(reply: message.reply.to_json)
+        # don't run any side-effects for this update
+        message.update_column(:reply, message.reply.to_json)
       end
     end
     change_column :messages, :reply, :jsonb, using: 'reply::text::jsonb'

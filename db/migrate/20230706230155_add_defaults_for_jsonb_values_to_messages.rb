@@ -1,12 +1,5 @@
 class AddDefaultsForJsonbValuesToMessages < ActiveRecord::Migration[7.0]
   def up
-    # Update existing null values to empty JSON objects for each jsonb column
-    Message.where(meta_data: nil).update_all(meta_data: {})
-    Message.where(reply: nil).update_all(reply: {})
-    Message.where(action_reply: nil).update_all(action_reply: {})
-    Message.where(nlu: nil).update_all(nlu: {})
-    Message.where(events: nil).update_all(events: {})
-
     # Set default value and non-null constraint for each jsonb column
     change_column_default :messages, :meta_data, from: nil, to: {}
     change_column_null :messages, :meta_data, false
