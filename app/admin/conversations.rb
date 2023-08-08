@@ -1,19 +1,6 @@
-ActiveAdmin.register Conversation do
+include SharedMessageDefs
 
-  # See permitted parameters documentation:
-  # https://github.com/activeadmin/activeadmin/blob/master/docs/2-resource-customization.md#setting-up-strong-parameters
-  #
-  # Uncomment all parameters which should be permitted for assignment
-  #
-  # permit_params :status
-  #
-  # or
-  #
-  # permit_params do
-  #   permitted = [:status]
-  #   permitted << :other if params[:action] == 'create' && current_user.admin?
-  #   permitted
-  # end
+ActiveAdmin.register Conversation do
 
   include DateScopes
 
@@ -92,24 +79,9 @@ ActiveAdmin.register Conversation do
     end
 
     panel "Messages" do
-      table_for conversation.messages.order(:created_at) do
-        column 'User' do |m|
-          link_to m.text, admin_message_path(m, scope: params[:scope])
-        end
-        column 'Bot', :reply_text
-        column :feedback
-        column 'Intent', :intent
-        column 'Entities', :entities
-        column 'Slots', :slots
-        column 'Actions', :actions
-        column 'Audio' do |m|
-          audio_urls = m.audio_urls
-          if audio_urls.nil? || audio_urls.empty?
-            'N/A'
-          else
-            audio_tag audio_urls, controls: true, preload: 'none'
-          end
-        end
+      # use highlight_feedback() to highlight feedback column depending on its value
+      table_for conversation.messages.order(:created_at), class: 'conversation_message_table', row_class: ->msg { highlight_feedback(msg) } do
+        message_columns
       end
     end
 
