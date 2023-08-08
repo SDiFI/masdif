@@ -1,6 +1,9 @@
 # Masdif configuration
 # This file contains most configuration options for Masdif. You can configure also RAILS_ENV specific settings, if
 # you need different configuration for different environments. ERB is also supported.
+#
+# Please note: environment variables are already set via the .env file prior before configuration of Masdif,
+# so you can use them here as well.
 
 shared:
   admin_interface:

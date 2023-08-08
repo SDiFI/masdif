@@ -270,7 +270,9 @@ docker-compose pull
 ## Starting Masdif
 
 Before starting Masdif, you need to create a `.env` file in the root directory of the project. You can use the
-provided file [.env.example](.env.example) as a template.
+provided file [.env.example](.env.example) as a template. The file `.env` will also be used by Masdif itself to get
+environment variables. Any environment variables defined before starting Masdif take precedence over the variables
+defined in the file `.env`. Take this into account for your deployment.
 
 After creating the `.env` file, start Masdif via:
 
