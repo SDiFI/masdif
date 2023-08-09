@@ -7,6 +7,7 @@ volumes:
   redis_data: {}
   rabbitmq_data: {}
   fuseki-data: {}
+  masdif-storage: {}
 
 x-rabbitmq-credentials: &rabbitmq-credentials
   RABBITMQ_HOST: "rabbit"
@@ -23,6 +24,9 @@ services:
         REGISTRY_URL: ${REGISTRY_URL:-}
     image: ${REGISTRY_URL:-}masdif:${APPLICATION_VERSION:-latest}
     container_name: masdif
+    volumes:
+      # local disk storage for masdif attachments
+      - masdif-storage:/var/www/masdif/storage
     depends_on:
       - db
       - redis
