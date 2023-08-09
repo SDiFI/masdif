@@ -78,7 +78,7 @@ module VersionHelper
   end
 
   # Returns the version of the application determined from the environment variables GIT_TAG, GIT_BRANCH and GIT_COMMIT.
-  # The format of the version is: <tag>-<branch>-<commit>
+  # The format of the version is: either <tag> or <branch>-<commit>
   #
   # @return [String] the version of the application
   def version_from_environment
