@@ -38,6 +38,8 @@ fi
 # Prepare .env file on server
 cp .env.example $ENV_FILE
 echo "APPLICATION_VERSION=$TAG" >> $ENV_FILE
+# we use also the TAG for the GIT_TAG variable, which determines the version that is displayed in the admin interface
+echo "GIT_TAG=$TAG" >> $ENV_FILE
 echo "ADMIN_INTERFACE_ENABLED=true" >>  $ENV_FILE
 
 # These variables are set from withing the CI/CD pipeline
