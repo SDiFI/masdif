@@ -114,7 +114,7 @@ class Message < ApplicationRecord
     return [] if self.events.nil?
     self.events.select { |e| e['event'] == 'slot' }.map do |slot|
       next if slot['name'].nil? || slot['name'] == 'session_started_metadata' || slot['value'].nil?
-      slot['value'] + ' ('+ slot['name'] + ')'
+      "#{slot['value']} (#{slot['name']})"
     end.uniq
   end
 
