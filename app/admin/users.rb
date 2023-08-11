@@ -19,12 +19,17 @@ ActiveAdmin.register User do
 
   controller do
     def update
+      if current_user.id == resource.id && params[:user][:role_id].present?
+        flash[:error] = "You cannot change your own role."
+        params[:user].delete(:role_id)
+      end
       model = :user
       # allow user to update a profile without entering a password, therefore
       # remove the password and password_confirmation fields if they are blank
       if params[model][:password].blank?
         %w(password password_confirmation).each { |p| params[model].delete(p) }
       end
+
       super
     end
   end
@@ -40,7 +45,7 @@ ActiveAdmin.register User do
       f.input :email
       f.input :password
       f.input :password_confirmation
-      if authorized? :manage, User
+      if authorized? :manage, User and current_user.id != f.resource.id
         f.input :role, as: :select, collection: Role.all.map{|r| [r.name, r.id]}
       end
     end
