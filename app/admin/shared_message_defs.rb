@@ -4,7 +4,12 @@ module SharedMessageDefs
   # Define the message columns of a messages table
   def message_columns
     column 'User text' do |m|
-      link_to m.text, admin_message_path(m, scope: params[:scope])
+      if current_user.admin?
+        # only show message details for admin users
+        link_to m.text, admin_message_path(m, scope: params[:scope])
+      else
+        m.text
+      end
     end
     column 'Bot answer', :reply_text
     # CSS highlighting rules apply to 'col-user_feedback' column
