@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.0].define(version: 2023_07_07_161812) do
+ActiveRecord::Schema[7.0].define(version: 2023_08_09_151657) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pgcrypto"
   enable_extension "plpgsql"
@@ -62,6 +62,8 @@ ActiveRecord::Schema[7.0].define(version: 2023_07_07_161812) do
     t.datetime "updated_at", null: false
     t.string "status"
     t.datetime "last_message_updated_at"
+    t.string "masdif_version", default: "v0.3.4", null: false
+    t.index ["masdif_version"], name: "index_conversations_on_masdif_version"
   end
 
   create_table "messages", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|

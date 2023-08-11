@@ -1,6 +1,8 @@
 require "test_helper"
 
 class ConversationsControllerTest < ActionDispatch::IntegrationTest
+  include VersionHelper
+
   setup do
     # create a new conversation
     post conversations_url, params: { }, as: :json
@@ -85,7 +87,9 @@ class ConversationsControllerTest < ActionDispatch::IntegrationTest
   test 'should update conversation' do
     post conversations_url, params: { }, as: :json
     json_response = JSON.parse(response.body)
-    conversation = Conversation.new(id: json_response['conversation_id'])
+    application_version = 'v10.12.1'
+    conversation = Conversation.new(id: json_response['conversation_id'], masdif_version: application_version)
+    assert conversation.masdif_version == application_version
     patch conversation_url(conversation), params: { text: @msg_hi.text, metadata: @msg_hi.meta_data }, as: :json
     assert_response :success
     json_response = response.parsed_body
@@ -99,7 +103,7 @@ class ConversationsControllerTest < ActionDispatch::IntegrationTest
   test 'should have a complete conversation flow' do
     post conversations_url, params: { }, as: :json
     conversation_id = response.parsed_body['conversation_id']
-    conversation = Conversation.new(id: conversation_id)
+    conversation = Conversation.new(id: conversation_id, masdif_version: app_version)
 
     patch conversation_url(conversation), params: { text: "/restart" }, as: :json
     assert_response :success
@@ -138,7 +142,7 @@ class ConversationsControllerTest < ActionDispatch::IntegrationTest
 
   test 'should return 404 in case an invalid conversation id is given' do
     # implement
-    conversation = Conversation.new(status: 'inactive')
+    conversation = Conversation.new(status: 'inactive', masdif_version: app_version)
     conversation.id = SecureRandom.uuid
     patch conversation_url(conversation), params: { text: @msg_hi.text }, as: :json
     assert_response :not_found
@@ -148,7 +152,7 @@ class ConversationsControllerTest < ActionDispatch::IntegrationTest
   test 'should post feedback' do
     post conversations_url, params: { }, as: :json
     json_response = JSON.parse(response.body)
-    conversation = Conversation.new(id: json_response['conversation_id'])
+    conversation = Conversation.new(id: json_response['conversation_id'], masdif_version: app_version)
     patch conversation_url(conversation), params: { text: @msg_baejastjori.text,
                                                     metadata: @msg_baejastjori.meta_data }, as: :json
     assert_response :success
@@ -178,7 +182,7 @@ class ConversationsControllerTest < ActionDispatch::IntegrationTest
     # first create a conversation and send a normal message
     post conversations_url, params: { }, as: :json
     json_response = JSON.parse(response.body)
-    conversation = Conversation.new(id: json_response['conversation_id'])
+    conversation = Conversation.new(id: json_response['conversation_id'], masdif_version: app_version)
     patch conversation_url(conversation), params: { text: @msg_baejastjori.text,
                                                     metadata: @msg_baejastjori.meta_data }, as: :json
     assert_response :success

@@ -14,6 +14,7 @@ ActiveAdmin.register Conversation do
   filter :messages_intent_in, as: :select, collection: -> { Message.intent_list }, label: 'Intent'
   filter :messages_asr_generated_eq, as: :boolean, label: 'ASR used ?'
   filter :created_at
+  filter :masdif_version, as: :string, label: 'Version'
 
   controller do
     def scoped_collection
@@ -47,6 +48,7 @@ ActiveAdmin.register Conversation do
     end
     column :created_at
     column "Updated At", :last_message_updated_at
+    column "Masdif Version", :masdif_version
 
     actions defaults: false do |conversation|
       item "Delete", admin_conversation_path(conversation), method: :delete, data: { confirm: "Are you sure you want to delete this?" }
@@ -94,6 +96,7 @@ ActiveAdmin.register Conversation do
         conversation.messages.last.created_at
       end
       row 'Status', &:status
+      row 'Masdif', &:masdif_version
     end
   end
 end
