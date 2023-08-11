@@ -11,6 +11,7 @@ end
 class ConversationsController < ActionController::API
   include FeedbackConcern
   include ConversationConcern
+  include VersionHelper
 
   before_action :transform_params
   before_action :set_conversation, only: %i[ show update destroy ]
@@ -44,7 +45,7 @@ class ConversationsController < ActionController::API
   #
   # Creates a new conversation and returns the ID of the new conversation. So far, no parameters are required.
   def create
-    @conversation = Conversation.new(status: 'new')
+    @conversation = Conversation.new(status: 'new', masdif_version: app_version)
     if @conversation.save!
       # add a restart event to the conversation
       event = "restart"

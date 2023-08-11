@@ -13,6 +13,33 @@ module VersionHelper
     end
   end
 
+  # Returns the given version string as integer for easy version comparison.
+  # The version string must be in the format: v<major>.<minor>.<patch>
+  # @param [String] version_string the version string to convert to an integer
+  # @return [Integer] the version string as integer
+  def version_as_int(version_string)
+    # remove the leading 'v' from the version string, then split the version string into an array of integers and return
+    # the first 3 elements of the array as an integer with the following calculation:
+    # major * 10000 + minor * 100 + patch
+    raise ArgumentError, "Invalid version string: #{version_string}" unless version_string =~ /^v\d+\.\d+\.\d+/
+    # if any gibberish is appended to the "official" version string, it is ignored (like branch name or commit hash)
+    version_string[1..]&.split('.').map(&:to_i).first(3).inject(0) { |a, e| a * 100 + e }
+  end
+
+  # Returns the given version integer as string.
+  # @param [Integer] version_int the version integer to convert to a string
+  # @return [String] the version integer as string
+  # @example
+  #   version_int = 304
+  #   int_as_version(version_int)
+  #   => "v0.3.4"
+  def int_as_version(version_int)
+    major = version_int / 10000
+    minor = (version_int - major * 10000) / 100
+    patch = version_int - major * 10000 - minor * 100
+    "v#{major}.#{minor}.#{patch}"
+  end
+
   private
 
   # Returns true if the application is running in a development environment.

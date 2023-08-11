@@ -2,6 +2,7 @@ class Conversation < ApplicationRecord
   has_many :messages, dependent: :destroy
 
   include TimeScopes
+  include VersionHelper
 
   # Returns the message as a JSON object, but deletes the id field and replaces it with conversation_id
   #
@@ -19,6 +20,12 @@ class Conversation < ApplicationRecord
     super.tap do |hash|
       hash['conversation_id'] = hash.delete "id"
     end
+  end
+
+  # Returns all versions of Masdif that are in use by conversations
+  # @return [Array<String>] the versions
+  def masdif_versions
+    Conversation.distinct.pluck(:masdif_version)
   end
 
 end
