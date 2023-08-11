@@ -17,6 +17,8 @@ class Ability
       can :update, User, id: user.id
     elsif user.admin?
       can :manage, :all
+      # admin can't delete himself. This guaranties that there is at least one admin left
+      cannot :destroy, User, id: user.id
     end
   end
 end
