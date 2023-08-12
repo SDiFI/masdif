@@ -50,8 +50,10 @@ ActiveAdmin.register Conversation do
     column "Updated At", :last_message_updated_at
     column "Masdif Version", :masdif_version
 
-    actions defaults: false do |conversation|
-      item "Delete", admin_conversation_path(conversation), method: :delete, data: { confirm: "Are you sure you want to delete this?" }
+    if authorized? :manage, Conversation
+      actions defaults: false do |conversation|
+        item "Delete", admin_conversation_path(conversation), method: :delete, data: { confirm: "Are you sure you want to delete this?" }
+      end
     end
   end
 

@@ -6,8 +6,10 @@
 #   movies = Movie.create([{ name: "Star Wars" }, { name: "Lord of the Rings" }])
 #   Character.create(name: "Luke", movie: movies.first)
 
+# Roles have already been created inside the migration itself
+
 # Create a dummy default admin user for the admin interface in development
-User.create!(email: 'admin@example.com', password: 'password', password_confirmation: 'password') if Rails.env.development?
+User.create!(email: 'admin@example.com', password: 'password', password_confirmation: 'password', role: :admin) if Rails.env.development?
 
 # For production, we want to make sure that we never create a default admin user. Therefore it needs to be explicitly
 # created via environment variables or Rails credentials.
@@ -15,7 +17,7 @@ if Rails.env.production?
   admin_user = Rails.application.credentials&.admin_user || ENV['ADMIN_USER']
   admin_password = Rails.application.credentials&.admin_password || ENV['ADMIN_PASSWORD']
   if admin_user && admin_password
-    User.create!(email: admin_user, password: admin_password, password_confirmation: admin_password)
+    User.create!(email: admin_user, password: admin_password, password_confirmation: admin_password, role: :admin)
   else
     raise "Missing ADMIN_USER and ADMIN_PASSWORD environment variables, or Rails credentials."
   end
