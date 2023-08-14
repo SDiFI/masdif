@@ -57,10 +57,10 @@ class ConversationsController < ActionController::API
       if rasa_response.status == 200
         # TODO: save the latest_event_time, so that we don't have to fetch the tracker before every message,
         #       then we always update the event time after we receive a message from dialog system
-        restart_msg.update!(reply: rasa_response.body.to_json)
+        restart_msg.update!(reply: rasa_response.body)
         render json: {conversation_id: @conversation.id}
       else
-        restart_msg.update!(reply: rasa_response.reason_phrase.to_json)
+        restart_msg.update!(reply: rasa_response.reason_phrase)
         render json: {error: 'Rasa server error'}, status: :internal_server_error
       end
     else
