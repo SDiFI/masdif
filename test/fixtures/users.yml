@@ -2,9 +2,9 @@
 
 one:
   email: 'one@example.com'
-  role: 'admin'
+  role: one
 
 two:
   email: 'two@example.com'
-  role: 'user'
+  role: two
 
