@@ -19,6 +19,21 @@ class User < ApplicationRecord
     self.role.name == role.to_s
   end
 
+  # Define the fields that can be searched by Ransack.
+  # @note: for this model class make sure not to include any password fields.
+  # @param [Object] auth_object
+  # @return [Array<String>]
+  def self.ransackable_attributes(auth_object = nil)
+    ["created_at", "id", "email", "updated_at"]
+  end
+
+  # Define the associations that can be searched by Ransack
+  # @param [Object] auth_object
+  # @return [Array<String>]
+  def self.ransackable_associations(auth_object = nil)
+    ["role"]
+  end
+
   private
 
   # Set the default role to user

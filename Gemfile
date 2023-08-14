@@ -85,7 +85,7 @@ gem 'grammatek-tts', :git => 'https://github.com/grammatek/tts-ruby-gem.git', re
 gem "sidekiq"
 
 # Active admin
-gem 'activeadmin'
+gem 'activeadmin', '~> 3'
 
 # Plus integrations with:
 gem 'color'
