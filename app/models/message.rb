@@ -23,6 +23,8 @@ class Message < ApplicationRecord
                               nlu['intent']['name']
                             end.uniq.sort }
 
+  NOTHING = ''.freeze
+
   # to be able to use :intent as filter argument and matching the name of the filtered intent
   ransacker :intent do |parent|
     op = Arel::Nodes::InfixOperation.new('->>', Arel::Nodes.build_quoted("intent"), Arel::Nodes.build_quoted("name"))
@@ -49,7 +51,7 @@ class Message < ApplicationRecord
     if reply.is_a?(Array)
       reply.collect { |r| r['text'] }.join(". ")
     else
-      reply['text']
+      reply['text'] || NOTHING
     end
   end
 
@@ -71,7 +73,7 @@ class Message < ApplicationRecord
   #
   # @return [String] the NLU result
   def intent
-    return 'N/A' if self.nlu.nil?
+    return NOTHING if self.nlu.nil?
     nlu_result = self.nlu
     rv = ""
     intent = nlu_result['intent']
@@ -79,7 +81,7 @@ class Message < ApplicationRecord
       rv = "#{intent['name']}"
     end
     if rv.empty?
-      rv = 'N/A'
+      rv = NOTHING
     end
     rv
   end
@@ -87,7 +89,7 @@ class Message < ApplicationRecord
   # Return entities as a String, each separated by a comma
   # @return [String] the entities
   def entities
-    return 'N/A' if self.nlu.nil?
+    return NOTHING if self.nlu.nil?
     nlu_result = self.nlu
     rv = ''
     if nlu_result['entities']&.any?
@@ -96,7 +98,7 @@ class Message < ApplicationRecord
       end
     end
     if rv.empty?
-      rv = 'N/A'
+      rv = NOTHING
     end
     rv.chomp(', ')
   end
@@ -111,11 +113,13 @@ class Message < ApplicationRecord
   # Return slots as an array of Strings
   # @return [Array] the slots
   def slots
-    return [] if self.events.nil?
-    self.events.select { |e| e['event'] == 'slot' }.map do |slot|
+    empty = [NOTHING]
+    return empty if self.events.nil?
+    rv = self.events.select { |e| e['event'] == 'slot' }.map do |slot|
       next if slot['name'].nil? || slot['name'] == 'session_started_metadata' || slot['value'].nil?
       "#{slot['value']} (#{slot['name']})"
     end.uniq
+    rv.empty? ? empty : rv
   end
 
   def self.default_tts_result
