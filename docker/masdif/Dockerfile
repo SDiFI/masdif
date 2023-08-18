@@ -17,15 +17,18 @@ WORKDIR $RAILS_ROOT
 ARG GIT_TAG
 ARG GIT_BRANCH
 ARG GIT_COMMIT
+ARG RAILS_MASTER_KEY
 
 # Convert them into environment variables
 ENV GIT_TAG=$GIT_TAG
 ENV GIT_BRANCH=$GIT_BRANCH
 ENV GIT_COMMIT=$GIT_COMMIT
+ENV RAILS_MASTER_KEY=$RAILS_MASTER_KEY
 
 # Setting env up
 ENV RAILS_ENV='production'
 ENV RACK_ENV='production'
+ENV EDITOR='cat'
 
 # Adding gems
 COPY Gemfile Gemfile

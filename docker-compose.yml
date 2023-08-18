@@ -22,6 +22,7 @@ services:
       args:
         APPLICATION_VERSION: ${APPLICATION_VERSION:-latest}
         REGISTRY_URL: ${REGISTRY_URL:-}
+        RAILS_MASTER_KEY: ${RAILS_MASTER_KEY:-}
     image: ${REGISTRY_URL:-}masdif:${APPLICATION_VERSION:-latest}
     container_name: masdif
     volumes:
@@ -95,7 +96,6 @@ services:
       - ./config/rasa/credentials.yml:/app/credentials.yml
       - ./rasa/config.yml:/app/config.yml
       - ./rasa/models:/app/models
-      - ./rasa/cache:/app/cache
     expose:
       - '${RASA_PORT}'
     command: >

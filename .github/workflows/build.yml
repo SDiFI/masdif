@@ -28,12 +28,46 @@ jobs:
         uses: actions/checkout@v3
         with:
           repository: SDiFI/sdifi_rasa_akranes
+          ref: ${{ env.RASA_MODEL_VERSION }}
           path: ${{ env.RASA_REPO_DIR }}
-      - name: Build masdif images
+      - name: Build Masdif images
         env:
           RAILS_CREDENTIALS: ${{ secrets.RAILS_CREDENTIALS }}
           RAILS_MASTER_KEY: ${{ secrets.RAILS_MASTER_KEY }}
+          GIT_COMMIT: ${{ github.sha }}
+          GIT_TAG: ${{ github.ref_name }}
         run: |
+          rm -f config/credentials.yml.enc config/master.key
           ci/create_credentials.sh $RAILS_CREDENTIALS $RAILS_MASTER_KEY
           cp .env.example .env
-          cat docker-compose.yml $RASA_REPO_DIR/masdif_override_template.yml | docker-compose -f - build
+          echo "GIT_COMMIT=$GIT_COMMIT" >> .env
+          echo "GIT_TAG=$GIT_TAG" >> .env
+          echo "APPLICATION_VERSION=$APPLICATION_VERSION" >> .env
+          echo "RAILS_MASTER_KEY=$RAILS_MASTER_KEY" >> .env
+          cat docker-compose.yml ${{ env.RASA_REPO_DIR }}/masdif_override_template.yml | docker-compose -f - build
+      - name: Download municipality Rasa model
+        uses: robinraju/release-downloader@v1.7
+        with:
+          repository: "sdifi/sdifi_rasa_akranes"
+          latest: true
+          fileName: "*.tar.gz"
+          out-file-path: ${{ env.RASA_REPO_DIR }}/models/
+      - name: Test Masdif
+        # This step starts up all containers and runs the tests against a clean test database
+        run: |
+          # remove the database volume, if available: starting from a clean slate
+          docker volume rm masdif_db_data || true
+          cat docker-compose.yml $RASA_REPO_DIR/masdif_override_template.yml | docker-compose -f -  up -d
+          echo "wait for 10 seconds until db is up and running, then run db:prepare for test+production db ..."
+          sleep 10
+          # run migrations for the test db and run Rails tests. These exercise complete conversations including TTS
+          cat docker-compose.yml $RASA_REPO_DIR/masdif_override_template.yml | docker-compose -f - exec -T masdif bundle exec rake db:prepare RAILS_ENV=production
+          cat docker-compose.yml $RASA_REPO_DIR/masdif_override_template.yml | docker-compose -f - exec -T masdif bundle exec rake db:prepare RAILS_ENV=test
+          echo "wait for 150 seconds until rasa shows the message 'Rasa is up and running' ..."
+          sleep 150
+          # if the following command fails, you need to debug via `cat docker-compose.yml $RASA_REPO_DIR/masdif_override_template.yml | docker-compose -f - logs rasa`
+          cat docker-compose.yml $RASA_REPO_DIR/masdif_override_template.yml | docker-compose -f - logs rasa | grep "Rasa server is up and running" | wc -l | grep 1 || (echo "Rasa did not start up in time" && exit 1)
+          echo "Running tests ..."
+          cat docker-compose.yml $RASA_REPO_DIR/masdif_override_template.yml | docker-compose -f - exec -T masdif bundle exec rails test -e test
+          echo "Stopping containers ..."
+          cat docker-compose.yml $RASA_REPO_DIR/masdif_override_template.yml | docker-compose -f - down
