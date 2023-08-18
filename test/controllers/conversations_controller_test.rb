@@ -114,6 +114,33 @@ class ConversationsControllerTest < ActionDispatch::IntegrationTest
     check_tts_attachment(response.parsed_body)
     check_meta_data(response.parsed_body, @msg_hi.meta_data)
 
+    patch conversation_url(conversation), params: { text: @msg_baejastjori.text, metadata: @msg_baejastjori.meta_data }, as: :json
+    assert_response :success
+    check_bot_response(conversation.id, response.parsed_body)
+    check_meta_data(response.parsed_body, @msg_baejastjori.meta_data)
+
+    patch conversation_url(conversation), params: { text: @msg_phone.text, metadata: {} }, as: :json
+    assert_response :success
+    check_bot_response(conversation.id, response.parsed_body)
+    check_tts_attachment(response.parsed_body)
+
+    patch conversation_url(conversation), params: { text: @msg_bless.text, metadata: {} }, as: :json
+    assert_response :success
+    check_bot_response(conversation.id, response.parsed_body)
+    check_tts_attachment(response.parsed_body)
+  end
+
+  # This test assures that we have a complete conversation flow and that the bot doesn't
+  # begin a new conversation when the same conversation_id is passed.
+  test 'should use buttons' do
+    skip "So far, buttons are not used in the conversation flow."
+
+    post conversations_url, params: { }, as: :json
+    conversation_id = response.parsed_body['conversation_id']
+    conversation = Conversation.new(id: conversation_id, masdif_version: app_version)
+
+    # TODO: currently, the buttons are not used in the conversation flow, but this is how it should work:
+
     patch conversation_url(conversation), params: { text: @msg_library.text, metadata: @msg_library.meta_data }, as: :json
     assert_response :success
     check_bot_response(conversation.id, response.parsed_body)
