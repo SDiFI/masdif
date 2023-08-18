@@ -404,7 +404,8 @@ For the development environment, the standard password is used as provided in [s
 
 For production, you either can provide credentials inside `config/credentials.yml.enc` via the keys `admin_user`,
 `admin_password` or via the environment variables `ADMIN_USER`, `ADMIN_PASSWORD`. These values are written to the
-database **at production db seed time!**
+database **at production db seed time!**.
+If you want to use these inside the docker container, you can e.g. set the environment variables in the `.env` file.
 
 The precedence if both means (Rails credentials / environment variables) are available is 1.) Rails credentials
 2.) environment variables.
@@ -416,6 +417,14 @@ are also able to add new admin users from here.
 
 Any change to either the files [seeds.rb](db/seeds.rb) or `config/credentials.yml.enc` will not be reflected until you
 re-seed the database !
+
+### Roles
+The admin interface supports 2 roles: `admin` and `user`. The `admin` role has full access to all resources
+and can create new users and admins. The `user` role has read-only access to all resources and can only change its own
+user profile. Moreover the `user` role can only index messages but not show details of a message.
+
+The `admin` role cannot change its role or delete itself. You need to create another admin user first to modify the
+old one. This is to prevent locking yourself out of the admin interface.
 
 ## chat_widget
 The `chat_widget` section contains options for the web chat widget. You can enable/disable the widget and change the
