@@ -6,7 +6,7 @@ ruby "3.2.2"
 gem 'dotenv-rails'
 
 # Bundle edge Rails instead: gem "rails", github: "rails/rails", branch: "main"
-gem "rails", "~> 7.0.5"
+gem "rails", "~> 7.0.7"
 gem "rack", ">= 2.2.6.4"
 gem 'rack-cors'
 
@@ -17,7 +17,7 @@ gem "sprockets-rails"
 gem "pg", "~> 1.4"
 
 # Use the Puma web server [https://github.com/puma/puma]
-gem "puma", "~> 5.0"
+gem 'puma', '< 7'
 
 # Use JavaScript with ESM import maps [https://github.com/rails/importmap-rails]
 gem "importmap-rails"
@@ -95,3 +95,4 @@ gem 'draper'
 gem 'pundit'
 gem 'apexcharts'
 gem 'groupdate'
+gem 'ransack', '~>4'
